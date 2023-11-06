@@ -1,27 +1,48 @@
-import { Product, User } from "../models";
+import { Category, Product, User } from "../models";
 import validateProfileInput from "../validation/profile";
 import { hashSync, compareSync } from "bcryptjs";
 
 async function getPublicProfile(req, res) {
   const { user_id } = req.params;
   const user = await User.findById(user_id);
+  const categories = await Category.find({});
   if (!user) {
     return res.status(404).json({
       success: false,
       message: "Not found user",
     });
   }
+  const owner = {
+    user_id: user._id,
+    fullname: user.fullname,
+    username: user.username,
+    email: user.email,
+    avatar: user.avatar,
+    cover: user.cover,
+    title: user.title,
+    bio: user.bio,
+  };
   const products = await Product.find({ owner: user_id });
   let feedbackResult = [];
   let feedbackCount = 0;
   let feedbackRate = 0;
   let productsResult = [];
   for (const product of products) {
+    const product_category = categories.filter(
+      (category) => category._id.toString() === product.category_id
+    );
     productsResult.push({
       product_id: product._id,
+      category: product_category[0],
+      owner: owner,
       title: product.title,
-      media: product.medias[0],
+      medias: product.medias,
       price: product.price,
+      description: product.description,
+      size: product.size,
+      quantity: product.quantity,
+      likes: product.likes,
+      feedbacks: product.feedbacks,
     });
 
     let totalRate = 0;
@@ -41,7 +62,7 @@ async function getPublicProfile(req, res) {
         }
       }
       let rate = totalRate / count;
-      feedbackRate;
+      feedbackRate += rate;
       let comment = maxFeedback.comment;
       feedbackResult = [
         {
@@ -79,27 +100,60 @@ async function getPublicProfile(req, res) {
 
 async function getProfile(req, res) {
   const user_id = req.id;
-  const user = await User.findById(user_id);
-  if (!user) {
-    return res.status(404).json({
-      success: false,
-      message: "Not found user",
-    });
-  }
+  console.log(user_id);
+  const users = await User.find({});
+  const categories = await Category.find({});
+
   const products = await Product.find({ owner: user_id });
+
   let feedbackResult = [];
   let feedbackCount = 0;
   let feedbackRate = 0;
   let productsResult = [];
-  const favoritedProducts = products.filter((product) => {
+  const filteredProducts = products.filter((product) => {
     return product.likes.some((like) => like.user_id === user_id);
   });
+  const favoritedProductResult = filteredProducts.map((product) => {
+    const product_category = categories.filter(
+      (category) => category._id.toString() === product.category_id
+    );
+    const product_user = users.filter(
+      (user) => user._id.toString() === product.owner.toString()
+    );
+    return {
+      product_id: product._id,
+      category: product_category[0],
+      owner: product_user[0],
+      title: product.title,
+      medias: product.medias,
+      price: product.price,
+      description: product.description,
+      size: product.size,
+      quantity: product.quantity,
+      likes: product.likes,
+      feedbacks: product.feedbacks,
+    };
+  });
   for (const product of products) {
+    const product_category = categories.filter(
+      (category) => category._id.toString() === product.category_id
+    );
+    const product_user = users.filter(
+      (user) => user._id.toString() === product.owner
+    );
+
     productsResult.push({
       product_id: product._id,
+      category: product_category[0],
+      owner: product_user[0],
       title: product.title,
-      media: product.medias[0],
+      medias: product.medias,
       price: product.price,
+      description: product.description,
+      size: product.size,
+      quantity: product.quantity,
+      likes: product.likes,
+      feedbacks: product.feedbacks,
     });
 
     let totalRate = 0;
@@ -119,7 +173,7 @@ async function getProfile(req, res) {
         }
       }
       let rate = totalRate / count;
-      feedbackRate;
+      feedbackRate += rate;
       let comment = maxFeedback.comment;
       feedbackResult = [
         {
@@ -138,7 +192,7 @@ async function getProfile(req, res) {
   return res.status(200).json({
     success: true,
     products: productsResult,
-    favorited_products: favoritedProducts,
+    favorited_products: favoritedProductResult,
     feedbacks: feedbackResult,
     feedback_count: feedbackCount,
     feedback_rate: feedbackResult.length
@@ -262,5 +316,5 @@ export {
   updateUserInfo,
   updatePassword,
   getPublicProfile,
-  getProfile
+  getProfile,
 };
