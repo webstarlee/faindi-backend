@@ -203,24 +203,27 @@ async function getProfile(req, res) {
 
 async function updateAvatar(req, res) {
   const { avatar } = req.body;
-  User.findById(req.id).then((user) => {
-    user.avatar = avatar;
-    user.save().then((user) => {
-      return res.status(200).json({
-        success: true,
-        message: "Your photo has changed successfullly.",
-        user: {
-          user_id: user._id,
-          fullname: user.fullname,
-          username: user.username,
-          email: user.email,
-          avatar: user.avatar,
-          title: user.title,
-          bio: user.bio,
-          cover: user.cover,
-        },
-      });
-    });
+  const user = await User.findById(req.id);
+  if (!user) {
+    return res.status(401).send({ message: "Permission  denied" });
+  }
+
+  user.avatar = avatar;
+  await user.save();
+  
+  return res.status(200).json({
+    success: true,
+    message: "Your photo has changed successfullly.",
+    user: {
+      user_id: user._id,
+      fullname: user.fullname,
+      username: user.username,
+      email: user.email,
+      avatar: user.avatar,
+      title: user.title,
+      bio: user.bio,
+      cover: user.cover,
+    },
   });
 }
 
