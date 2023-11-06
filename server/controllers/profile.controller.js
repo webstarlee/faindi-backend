@@ -279,7 +279,7 @@ async function updateUserInfo(req, res) {
     }
   }
 
-  await user.save();
+  const newone = await user.save();
 
   return res.status(200).json({
     success: true,
