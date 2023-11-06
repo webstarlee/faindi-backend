@@ -8,13 +8,13 @@ async function getAllProductsCategories(req, res) {
   const products = await Product.find({});
   let result_products = [];
   products?.map((product) => {
-    const product_user = users.filter((user) => user._id === product.owner);
+    const product_user = users.filter((user) => user._id.toString() === product.owner);
     const product_category = categories.filter(
-      (category) => category._id === product.category_id
+      (category) => category._id.toString() === product.category_id
     );
     const single_product = {
-      owner: product_user,
-      category: product_category,
+      owner: product_user[0],
+      category: product_category[0],
       title: product.title,
       medias: product.medias,
       size: product.size,
