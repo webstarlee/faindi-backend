@@ -1,6 +1,41 @@
-import { User } from "../models";
+import { Product, User } from "../models";
 import validateProfileInput from "../validation/profile";
 import { hashSync, compareSync } from "bcryptjs";
+
+async function getPublicProfile(req, res) {
+  const { user_id } = req.params;
+  const user = await User.findById(user_id);
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "Not found user",
+    });
+  }
+  const products = await Product.find({ owner: user_id });
+  let feedbackResult = [];
+  for (const product of products) {
+    if (product.feedbacks.length) {
+      for (const feedback of product.feedbacks) {
+        feedbackResult = [feedback, ...feedbackResult];
+      }
+    }
+  }
+
+  return res.status(200).json({
+    success: true,
+    user: {
+      user_id: user._id,
+      avatar: user.avatar,
+      cover: user.cover,
+      fullname: user.fullname,
+      username: user.username,
+      bio: user.bio,
+      title: user.title,
+    },
+    products: products,
+    feedbacks: feedbackResult,
+  });
+}
 
 async function updateAvatar(req, res) {
   const { avatar } = req.body;
@@ -18,7 +53,7 @@ async function updateAvatar(req, res) {
           avatar: user.avatar,
           title: user.title,
           bio: user.bio,
-          cover: user.cover
+          cover: user.cover,
         },
       });
     });
@@ -41,7 +76,7 @@ async function updateCover(req, res) {
           avatar: user.avatar,
           title: user.title,
           bio: user.bio,
-          cover: user.cover
+          cover: user.cover,
         },
       });
     });
@@ -78,7 +113,7 @@ async function updateUserInfo(req, res) {
         avatar: newone.avatar,
         title: newone.title,
         bio: newone.bio,
-        cover: newone.cover
+        cover: newone.cover,
       },
     });
   } else {
@@ -111,4 +146,10 @@ async function updatePassword(req, res) {
   }
 }
 
-export { updateAvatar, updateCover, updateUserInfo, updatePassword };
+export {
+  updateAvatar,
+  updateCover,
+  updateUserInfo,
+  updatePassword,
+  getPublicProfile,
+};

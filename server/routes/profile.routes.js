@@ -1,6 +1,11 @@
-import { updateAvatar, updateCover, updatePassword, updateUserInfo } from "../controllers/profile.controller";
+import {
+  getPublicProfile,
+  updateAvatar,
+  updateCover,
+  updatePassword,
+  updateUserInfo,
+} from "../controllers/profile.controller";
 import { authJwt } from "../middlewares";
-
 
 export default function (app) {
   app.use(function (req, res, next) {
@@ -10,9 +15,14 @@ export default function (app) {
     );
     next();
   });
-  
-  app.post("/api/profile/update/avatar", authJwt.verifyToken, updateAvatar)
-  app.post("/api/profile/update/cover", authJwt.verifyToken, updateCover)
-  app.post("/api/profile/update/info", authJwt.verifyToken, updateUserInfo)
-  app.post("/api/profile/update/password", authJwt.verifyToken, updatePassword)
-};
+
+  app.post("/api/profile/update/avatar", authJwt.verifyToken, updateAvatar);
+  app.post("/api/profile/update/cover", authJwt.verifyToken, updateCover);
+  app.post("/api/profile/update/info", authJwt.verifyToken, updateUserInfo);
+  app.post("/api/profile/update/password", authJwt.verifyToken, updatePassword);
+  app.get(
+    "/api/profile/public/:user_id",
+    authJwt.verifyToken,
+    getPublicProfile
+  );
+}
