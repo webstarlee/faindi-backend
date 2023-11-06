@@ -1,5 +1,9 @@
 import {
+  feedBack,
   getAllProductsCategories,
+  likeProduct,
+  saveProduct,
+  updateProduct,
 } from "../controllers/product.controller";
 import { authJwt } from "../middlewares";
 
@@ -12,5 +16,9 @@ export default function (app) {
     next();
   });
 
-  app.get("/api/items", getAllProductsCategories);
+  app.get("/api/product/items", getAllProductsCategories);
+  app.post("/api/product/create", authJwt.verifyToken, saveProduct);
+  app.post("/api/product/update", authJwt.verifyToken, updateProduct);
+  app.post("/api/product/like", authJwt.verifyToken, likeProduct);
+  app.post("/api/product/feedback", authJwt.verifyToken, feedBack);
 }

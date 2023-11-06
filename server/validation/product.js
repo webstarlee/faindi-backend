@@ -7,7 +7,10 @@ export default function validateProductInput(data) {
   // Convert empty fields to an empty string so we can use validator functions
   data.title = !isEmpty(data.title) ? data.title : "";
   data.price = data.price > 0 ? data.price : 0;
-  data.cat_id = !isEmpty(data.cat_id) ? data.cat_id : "";
+  data.category_id = !isEmpty(data.category_id) ? data.category_id : "";
+  data.size = !isEmpty(data.size) ? data.size : "";
+  data.quantity = data.quantity > 0 ? data.quantity : 0;
+
 
   if (_isEmpty(data.title)) {
     errors.title = "Title is required";
@@ -17,8 +20,16 @@ export default function validateProductInput(data) {
     errors.price = "Price field is required";
   }
 
-  if (_isEmpty(data.cat_id)) {
-    errors.cat_id = "Choose Category correctly";
+  if (!data.quantity) {
+    errors.quantity = "Quantity field is required";
+  }
+
+  if (!data.size) {
+    errors.size = "Size field is required";
+  }
+
+  if (_isEmpty(data.category_id)) {
+    errors.category_id = "Choose Category correctly";
   }
 
   return {
