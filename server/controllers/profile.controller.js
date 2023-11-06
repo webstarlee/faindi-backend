@@ -13,11 +13,48 @@ async function getPublicProfile(req, res) {
   }
   const products = await Product.find({ owner: user_id });
   let feedbackResult = [];
+  let feedbackCount = 0;
+  let feedbackRate = 0;
+  let productsResult = [];
   for (const product of products) {
+    productsResult.push({
+      product_id: product._id,
+      product_id: product._id,
+      title: product.title,
+      media: product.medias[0],
+      price: product.price,
+    });
+
+    let totalRate = 0;
+    let count = 0;
+    let maxFeedback = {
+      rate: 0,
+      comment: "",
+    };
     if (product.feedbacks.length) {
+      maxFeedback.comment = product.feedbacks[0].comment;
       for (const feedback of product.feedbacks) {
-        feedbackResult = [feedback, ...feedbackResult];
+        totalRate += feedback.rate;
+        count++;
+        feedbackCount++;
+        if (maxFeedback.rate < feedback.rate) {
+          maxFeedback = feedback;
+        }
       }
+      let rate = totalRate / count;
+      feedbackRate;
+      let comment = maxFeedback.comment;
+      feedbackResult = [
+        {
+          rate,
+          comment,
+          product_id: product._id,
+          title: product.title,
+          media: product.medias[0],
+          price: product.price,
+        },
+        ...feedbackResult,
+      ];
     }
   }
 
@@ -32,8 +69,12 @@ async function getPublicProfile(req, res) {
       bio: user.bio,
       title: user.title,
     },
-    products: products,
+    products: productsResult,
     feedbacks: feedbackResult,
+    feedback_count: feedbackCount,
+    feedback_rate: feedbackResult.length
+      ? feedbackRate / feedbackResult.length
+      : 0,
   });
 }
 
