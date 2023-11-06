@@ -258,40 +258,43 @@ async function updateUserInfo(req, res) {
   if (!isValid) {
     return res.status(400).json(errors);
   }
-  const { fullname, email, username, title, bio } = req.body;
+  const { fullname, username, title, bio } = req.body;
 
   const user = await User.findById(req.id);
-  if (user) {
-    user.fullname = fullname;
-    user.title = title;
-    user.bio = bio;
-    if (user.email !== email) {
-      user.email = email;
-    }
 
-    if (user.username !== username) {
+  if (!user) {
+    return res.status(401).send({ message: "Permission  denied" });
+  }
+
+  user.fullname = fullname;
+  user.title = title;
+  user.bio = bio;
+  const error_msg = "";
+  if (user.username !== username) {
+    const exist_user = await User.findOne({ username: username });
+    if (exist_user) {
+      error_msg = "Username already taken.";
+    } else {
       user.username = username;
     }
-    const newone = await user.save();
-    return res.status(200).json({
-      success: true,
-      user: {
-        user_id: newone._id,
-        fullname: newone.fullname,
-        username: newone.username,
-        email: newone.email,
-        avatar: newone.avatar,
-        title: newone.title,
-        bio: newone.bio,
-        cover: newone.cover,
-      },
-    });
-  } else {
-    return res.status(404).json({
-      success: false,
-      message: "Not found user.",
-    });
   }
+
+  await user.save();
+
+  return res.status(200).json({
+    success: true,
+    message: error_msg,
+    user: {
+      user_id: newone._id,
+      fullname: newone.fullname,
+      username: newone.username,
+      email: newone.email,
+      avatar: newone.avatar,
+      title: newone.title,
+      bio: newone.bio,
+      cover: newone.cover,
+    },
+  });
 }
 
 async function updatePassword(req, res) {
