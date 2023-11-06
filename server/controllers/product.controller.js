@@ -13,47 +13,6 @@ async function getAllProductsCategories(req, res) {
   });
 }
 
-async function getAllProductsCategoriesByUserId(req, res) {
-  const products = await Product.find({
-    $nor: [{ owner: req.id }],
-  });
-
-  const resdata = products?.map((product) => {
-    const isLiked = product.likes.some(
-      (like) => like.user_id.toString() === req.id.toString()
-    );
-    return {
-      ...product._doc,
-      liked: isLiked,
-    };
-  });
-  const all_categories = await Category.find({});
-
-  res.status(200).json({
-    success: true,
-    products: resdata,
-    categories: all_categories,
-  });
-}
-
-async function getAllProductsByProfile(req, res) {
-  const owner = req.id;
-  const products = await Product.find({ owner });
-  const resdata = products?.map((product) => {
-    const isLiked = product.likes.some(
-      (like) => like.user_id.toString() === req.id.toString()
-    );
-    return {
-      ...product._doc,
-      liked: isLiked,
-    };
-  });
-  res.status(200).json({
-    success: true,
-    products: resdata,
-  });
-}
-
 async function saveProduct(req, res) {
   //Form Valdiation
   const { errors, isValid } = ValidateProductInput(req.body);
@@ -206,8 +165,6 @@ async function feedBack(req, res) {
 
 export {
   getAllProductsCategories,
-  getAllProductsCategoriesByUserId,
-  getAllProductsByProfile,
   saveProduct,
   updateProduct,
   likeProduct,

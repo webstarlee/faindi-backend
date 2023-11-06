@@ -19,7 +19,6 @@ async function getPublicProfile(req, res) {
   for (const product of products) {
     productsResult.push({
       product_id: product._id,
-      product_id: product._id,
       title: product.title,
       media: product.medias[0],
       price: product.price,
@@ -70,6 +69,76 @@ async function getPublicProfile(req, res) {
       title: user.title,
     },
     products: productsResult,
+    feedbacks: feedbackResult,
+    feedback_count: feedbackCount,
+    feedback_rate: feedbackResult.length
+      ? feedbackRate / feedbackResult.length
+      : 0,
+  });
+}
+
+async function getProfile(req, res) {
+  const user_id = req.id;
+  const user = await User.findById(user_id);
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "Not found user",
+    });
+  }
+  const products = await Product.find({ owner: user_id });
+  let feedbackResult = [];
+  let feedbackCount = 0;
+  let feedbackRate = 0;
+  let productsResult = [];
+  const favoritedProducts = products.filter((product) => {
+    return product.likes.some((like) => like.user_id === user_id);
+  });
+  for (const product of products) {
+    productsResult.push({
+      product_id: product._id,
+      title: product.title,
+      media: product.medias[0],
+      price: product.price,
+    });
+
+    let totalRate = 0;
+    let count = 0;
+    let maxFeedback = {
+      rate: 0,
+      comment: "",
+    };
+    if (product.feedbacks.length) {
+      maxFeedback.comment = product.feedbacks[0].comment;
+      for (const feedback of product.feedbacks) {
+        totalRate += feedback.rate;
+        count++;
+        feedbackCount++;
+        if (maxFeedback.rate < feedback.rate) {
+          maxFeedback = feedback;
+        }
+      }
+      let rate = totalRate / count;
+      feedbackRate;
+      let comment = maxFeedback.comment;
+      feedbackResult = [
+        {
+          rate,
+          comment,
+          product_id: product._id,
+          title: product.title,
+          media: product.medias[0],
+          price: product.price,
+        },
+        ...feedbackResult,
+      ];
+    }
+  }
+
+  return res.status(200).json({
+    success: true,
+    products: productsResult,
+    favorited_products: favoritedProducts,
     feedbacks: feedbackResult,
     feedback_count: feedbackCount,
     feedback_rate: feedbackResult.length
@@ -193,4 +262,5 @@ export {
   updateUserInfo,
   updatePassword,
   getPublicProfile,
+  getProfile
 };
