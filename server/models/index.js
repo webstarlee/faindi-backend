@@ -8,3 +8,4 @@ export { default as Role } from "./role.model";
 export { default as Token } from "./token.model";
 export { default as Category } from "./category.model";
 export { default as Product } from "./product.model";
+export { default as Follow } from "./follow.model";

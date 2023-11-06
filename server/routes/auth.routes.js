@@ -1,5 +1,11 @@
 import { verifySignUp } from "../middlewares";
-import { signup, signin, verify, sendVerifyEmail, checkUsername } from "../controllers/auth.controller";
+import {
+  signup,
+  signin,
+  verify,
+  sendVerifyEmail,
+  checkUsername,
+} from "../controllers/auth.controller";
 
 export default function (app) {
   app.use(function (req, res, next) {
@@ -23,4 +29,4 @@ export default function (app) {
   app.post("/api/auth/signin", signin);
 
   app.post("/api/auth/send-verify", sendVerifyEmail);
-};
+}
