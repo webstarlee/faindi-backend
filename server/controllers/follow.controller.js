@@ -12,17 +12,17 @@ async function follow(req, res) {
       follower.liked = !follower.liked;
       const result = await follower.save();
       if (result.liked) {
-        // await createNotification(
-        //   req.id,
-        //   user_id,
-        //   "started following you again on FAINDI"
-        // );
+        await createNotification(
+          req.id,
+          user_id,
+          "started following you again on FAINDI"
+        );
       } else {
-        // await createNotification(
-        //   req.id,
-        //   user_id,
-        //   "caneled following you again on FAINDI"
-        // );
+        await createNotification(
+          req.id,
+          user_id,
+          "caneled following you again on FAINDI"
+        );
       }
       const following = await User.findById(user_id);
       const user = {
@@ -46,11 +46,11 @@ async function follow(req, res) {
         liked: true,
       });
       const result = await follow.save();
-      //   await createNotification(
-      //     req.id,
-      //     user_id,
-      //     "started following you on FAINDI"
-      //   );
+        await createNotification(
+          req.id,
+          user_id,
+          "started following you on FAINDI"
+        );
       const following = await User.findById(user_id);
       const user = {
         user_id: following._id,

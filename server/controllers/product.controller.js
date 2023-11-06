@@ -1,4 +1,4 @@
-import { Product, Category, User, Profile } from "../models";
+import { Product, Category, User, Profile, Notification } from "../models";
 import ValidateProductInput from "../validation/product";
 import createNotification from "../helpers/notification";
 
@@ -148,11 +148,13 @@ async function likeProduct(req, res) {
     }
     const newone = await product.save();
     if (!isLiked) {
-      // await createNotification(
-      //   req.id,
-      //   newone.user_id,
-      //   `favorited your listing "${newone.title}"`
-      // );
+      try {
+        await createNotification(
+          req.id,
+          newone.owner,
+          `favorited your listing "${newone.title}"`
+        );
+      } catch (error) {}
     }
     return res.json({
       success: true,
@@ -181,6 +183,14 @@ async function feedBack(req, res) {
   if (product) {
     product.feedbacks.push({ rate, comment, user_id: req.id });
     const newone = await product.save();
+    const user = await User.findById(req.id);
+    await new Notification({
+      fromUserId: req.id,
+      toUserId: product.owner,
+      isReview: true,
+      rate: rate,
+      content: user.username + " has left you a review.",
+    }).save();
     return res.status(200).json({
       success: true,
       product: newone,
