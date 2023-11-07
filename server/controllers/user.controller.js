@@ -1,6 +1,7 @@
 import { User } from "../models";
 
 export async function userBoard(req, res) {
+  console.log("call here")
   const user = await User.findById(req.id);
   if (!user) {
     return res.status(401).send({ message: "Permission  denied" });

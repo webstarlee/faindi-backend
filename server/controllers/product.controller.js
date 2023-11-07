@@ -42,10 +42,10 @@ async function saveProduct(req, res) {
     return res.status(400).json(errors);
   }
 
-  const { medias, quantity, title, price, description, category_id, size } =
+  const { medias, title, quantity, price, description, category_id, size } =
     req.body;
 
-  new Product({
+  const newProduct = await new Product({
     owner: req.id,
     medias,
     quantity,
@@ -54,18 +54,13 @@ async function saveProduct(req, res) {
     description,
     category_id,
     size,
-  })
-    .save()
-    .then((product) => {
-      return res.json({
-        success: true,
-        message: "Your product has been added.",
-        product,
-      });
-    })
-    .catch((err) => {
-      console.log(err);
-    });
+  }).save();
+
+  return res.json({
+    success: true,
+    message: "Your product has been added.",
+    product: newProduct
+  });
 }
 
 async function updateProduct(req, res) {
