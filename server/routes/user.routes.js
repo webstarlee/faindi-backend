@@ -1,6 +1,7 @@
 import { authJwt } from "../middlewares";
 import {
   userBoard,
+  userItems
 } from "../controllers/user.controller";
 
 export default function (app) {
@@ -13,4 +14,5 @@ export default function (app) {
   });
   
   app.get("/api/user/current", [authJwt.verifyToken], userBoard);
+  app.get("/api/user/items", [authJwt.verifyToken], userItems);
 };

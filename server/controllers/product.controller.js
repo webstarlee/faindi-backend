@@ -25,6 +25,7 @@ async function getAllProductsCategories(req, res) {
       likes: product.likes,
       feedbacks: product.feedbacks,
     };
+    console.log(single_product)
     result_products.push(single_product);
   });
 
@@ -42,8 +43,16 @@ async function saveProduct(req, res) {
     return res.status(400).json(errors);
   }
 
-  const { medias, title, quantity, price, description, category_id, size } =
-    req.body;
+  const { medias, title, quantity, price, description, category_id, size } = req.body;
+
+  const me = await User.findById(req.id);
+  if (!me) {
+    return res.status(401).send({ message: "Permission  denied" });
+  }
+  const category = await Category.findById(category_id);
+  if (!category) {
+    return res.status(400).send({ message: "Can not find Category" });
+  }
 
   const newProduct = await new Product({
     owner: req.id,
@@ -56,10 +65,24 @@ async function saveProduct(req, res) {
     size,
   }).save();
 
+  const product = {
+    owner: me,
+    category: category,
+    title: newProduct.title,
+    medias: newProduct.medias,
+    size: newProduct.size,
+    quantity: newProduct.quantity,
+    sold: newProduct.sold,
+    price: newProduct.price,
+    description: newProduct.description,
+    likes: newProduct.likes,
+    feedbacks: newProduct.feedbacks,
+  }
+
   return res.json({
     success: true,
     message: "Your product has been added.",
-    product: newProduct
+    product: product
   });
 }
 
