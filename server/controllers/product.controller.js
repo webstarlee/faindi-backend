@@ -13,6 +13,7 @@ async function getAllProductsCategories(req, res) {
       (category) => category._id.toString() === product.category_id
     );
     const single_product = {
+      _id: product._id,
       owner: product_user[0],
       category: product_category[0],
       title: product.title,
@@ -66,6 +67,7 @@ async function saveProduct(req, res) {
   }).save();
 
   const product = {
+    _id: newProduct._id,
     owner: me,
     category: category,
     title: newProduct.title,

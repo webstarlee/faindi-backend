@@ -2,99 +2,74 @@ import { Category, Product, User } from "../models";
 import validateProfileInput from "../validation/profile";
 import { hashSync, compareSync } from "bcryptjs";
 
-async function getPublicProfile(req, res) {
-  const { user_id } = req.params;
-  const user = await User.findById(user_id);
-  const categories = await Category.find({});
-  if (!user) {
-    return res.status(404).json({
-      success: false,
-      message: "Not found user",
-    });
+async function getProfileItems(req, res) {
+  const me = await User.findById(req.id);
+  if (!me) {
+    return res.status(401).send({ message: "Permission  denied" });
   }
-  const owner = {
-    user_id: user._id,
-    fullname: user.fullname,
-    username: user.username,
-    email: user.email,
-    avatar: user.avatar,
-    cover: user.cover,
-    title: user.title,
-    bio: user.bio,
-  };
-  const products = await Product.find({ owner: user_id });
-  let feedbackResult = [];
-  let feedbackCount = 0;
-  let feedbackRate = 0;
-  let productsResult = [];
-  for (const product of products) {
+  const users = await User.find({});
+  const categories = await Category.find({});
+  const related_products = await Product.find({"$or": [{"likes.user_id": me._id}, {owner: me._id}]});
+
+  var own_products = [];
+  var like_products = [];
+
+  related_products.map((product, _index) => {
+    const product_user = users.filter((user) => user._id.toString() === product.owner);
     const product_category = categories.filter(
       (category) => category._id.toString() === product.category_id
     );
-    productsResult.push({
-      product_id: product._id,
+    const single_product = {
+      _id: product._id,
+      owner: product_user[0],
       category: product_category[0],
-      owner: owner,
       title: product.title,
       medias: product.medias,
-      price: product.price,
-      description: product.description,
       size: product.size,
       quantity: product.quantity,
+      sold: product.sold,
+      price: product.price,
+      description: product.description,
       likes: product.likes,
       feedbacks: product.feedbacks,
-    });
-
-    let totalRate = 0;
-    let count = 0;
-    let maxFeedback = {
-      rate: 0,
-      comment: "",
     };
-    if (product.feedbacks.length) {
-      maxFeedback.comment = product.feedbacks[0].comment;
-      for (const feedback of product.feedbacks) {
-        totalRate += feedback.rate;
-        count++;
-        feedbackCount++;
-        if (maxFeedback.rate < feedback.rate) {
-          maxFeedback = feedback;
-        }
-      }
-      let rate = totalRate / count;
-      feedbackRate += rate;
-      let comment = maxFeedback.comment;
-      feedbackResult = [
-        {
-          rate,
-          comment,
-          product_id: product._id,
-          title: product.title,
-          media: product.medias[0],
-          price: product.price,
-        },
-        ...feedbackResult,
-      ];
-    }
-  }
 
-  return res.status(200).json({
-    success: true,
-    user: {
-      user_id: user._id,
-      avatar: user.avatar,
-      cover: user.cover,
-      fullname: user.fullname,
-      username: user.username,
-      bio: user.bio,
-      title: user.title,
-    },
-    products: productsResult,
-    feedbacks: feedbackResult,
-    feedback_count: feedbackCount,
-    feedback_rate: feedbackResult.length
-      ? feedbackRate / feedbackResult.length
-      : 0,
+    if (product.owner == me._id) {
+      own_products.push(single_product);
+    } else {
+      like_products.push(single_product);
+    }
+  });
+
+  var feedbacks = [];
+  var total_feedback_count = 0;
+  var total_rate_sum = 0;
+  own_products.map((product, _index) => {
+    if (product.feedbacks.length > 0) {
+      const rate_sum = product.feedbacks.map(feedback => feedback.rate).reduce((prev, curr) => prev + curr, 0);
+      total_rate_sum += rate_sum;
+      const feedback_count = product.feedbacks.length;
+      const average_rate = Math.round(rate_sum/feedback_count);
+      total_feedback_count += feedback_count;
+      const max_feedback = product.feedbacks.reduce((max, item) => (item.rate > max.rate ? item : max), product.feedbacks[0]);
+      const best_feedback_text = max_feedback.comment;
+      const single_feedback = {
+        product: product,
+        rate: average_rate,
+        comment: best_feedback_text
+      };
+      feedbacks.push(single_feedback);
+    }
+  });
+
+  const totral_rate_average = Math.round(total_rate_sum/total_feedback_count);
+
+  return res.status(200).send({
+    own_products: own_products,
+    like_products: like_products,
+    feedbacks: feedbacks,
+    total_rate: totral_rate_average,
+    total_feedback_count: total_feedback_count
   });
 }
 
@@ -324,6 +299,6 @@ export {
   updateCover,
   updateUserInfo,
   updatePassword,
-  getPublicProfile,
+  getProfileItems,
   getProfile,
 };

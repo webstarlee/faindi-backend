@@ -1,6 +1,6 @@
 import {
   getProfile,
-  getPublicProfile,
+  getProfileItems,
   updateAvatar,
   updateCover,
   updatePassword,
@@ -17,10 +17,10 @@ export default function (app) {
     next();
   });
 
+  app.get("/api/profile/items", authJwt.verifyToken, getProfileItems);
   app.post("/api/profile/update/avatar", authJwt.verifyToken, updateAvatar);
   app.post("/api/profile/update/cover", authJwt.verifyToken, updateCover);
   app.post("/api/profile/update/info", authJwt.verifyToken, updateUserInfo);
   app.post("/api/profile/update/password", authJwt.verifyToken, updatePassword);
-  app.get("/api/profile/public/:user_id", getPublicProfile);
   app.get("/api/profile/mine", authJwt.verifyToken, getProfile);
 }
