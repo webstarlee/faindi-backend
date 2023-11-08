@@ -26,7 +26,6 @@ async function getAllProductsCategories(req, res) {
       likes: product.likes,
       feedbacks: product.feedbacks,
     };
-    console.log(single_product)
     result_products.push(single_product);
   });
 

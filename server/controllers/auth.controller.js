@@ -111,7 +111,8 @@ export function verify(req, res) {
         console.log(
           "Current time is more than 15 minutes from the start time."
         );
-        return res.send({ message: "Token expired!" });
+        await token.deleteOne();
+        return res.status(400).send({ message: "Token expired" });
       }
     });
 }

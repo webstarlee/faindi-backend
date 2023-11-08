@@ -12,9 +12,9 @@ const Follow = model(
       ref: "User",
       required: true,
     },
-    liked: {
-      type: Boolean,
-      default: false,
+    created_at: {
+      type: Date,
+      default: Date.now(),
     },
   })
 );

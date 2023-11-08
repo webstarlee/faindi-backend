@@ -7,11 +7,9 @@ import bodyParser from "body-parser";
 import swaggerUi from "swagger-ui-express";
 import { DB, MongoUri } from "./config/db.config";
 import { categorySeed, roleAdminSeed } from "./seeds";
-import { authRoutes, userRoutes, productRoutes } from "./routes/index";
+import { authRoutes, userRoutes, productRoutes, profileRoutes } from "./routes/index";
 import mongoose from "./models";
 import swaggerDoc from "./swaggerDoc.js";
-import profileRoutes from "./routes/profile.routes.js";
-import followRoutes from "./routes/follow.routes.js";
 var app = express();
 app.use(cors());
 app.use(logger("dev"));
@@ -50,7 +48,7 @@ authRoutes(app);
 userRoutes(app);
 productRoutes(app);
 profileRoutes(app);
-followRoutes(app);
+
 function initial() {
   roleAdminSeed();
   categorySeed();

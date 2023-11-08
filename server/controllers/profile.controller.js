@@ -1,4 +1,4 @@
-import { Category, Product, User } from "../models";
+import { Category, Product, User, Follow } from "../models";
 import validateProfileInput from "../validation/profile";
 import { hashSync, compareSync } from "bcryptjs";
 
@@ -64,10 +64,51 @@ async function getProfileItems(req, res) {
 
   const totral_rate_average = Math.round(total_rate_sum/total_feedback_count);
 
+  const my_followings = await Follow.find({follower: me._id});
+  var following_user_ids = [];
+  var followings = [];
+  my_followings.map(follow => {
+    following_user_ids.push(follow.following)
+  });
+  const followings_user_products = await Product.find({owner: {"$in": following_user_ids}});
+  
+  my_followings.map((follow, index) => {
+    const following_user = users.filter((user) => user._id.toString() === follow.following.toString())[0];
+    const follow_products = followings_user_products.filter((prod) => prod.owner.toString() === follow.following.toString());
+    var top_product = null;
+
+    if (follow_products.length> 0) {
+      const tmp_top_product = follow_products[0]
+      const product_category = categories.filter((cat) => cat._id.toString() === tmp_top_product.category_id.toString());
+      top_product = {
+        _id: tmp_top_product._id,
+        owner: following_user,
+        category: product_category,
+        title: tmp_top_product.title,
+        medias: tmp_top_product.medias,
+        size: tmp_top_product.size,
+        quantity: tmp_top_product.quantity,
+        sold: tmp_top_product.sold,
+        price: tmp_top_product.price,
+        description: tmp_top_product.description,
+        likes: tmp_top_product.likes,
+        feedbacks: tmp_top_product.feedbacks,
+      };
+    }
+
+    const single_following = {
+      user: following_user,
+      top_product: top_product,
+    };
+
+    followings.push(single_following)
+  })
+
   return res.status(200).send({
     own_products: own_products,
     like_products: like_products,
     feedbacks: feedbacks,
+    followings: followings,
     total_rate: totral_rate_average,
     total_feedback_count: total_feedback_count
   });
@@ -75,7 +116,6 @@ async function getProfileItems(req, res) {
 
 async function getProfile(req, res) {
   const user_id = req.id;
-  console.log(user_id);
   const users = await User.find({});
   const categories = await Category.find({});
 
@@ -300,5 +340,5 @@ export {
   updateUserInfo,
   updatePassword,
   getProfileItems,
-  getProfile,
+  getProfile
 };
