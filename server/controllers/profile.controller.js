@@ -98,7 +98,7 @@ async function getProfileItems(req, res) {
 
     const single_following = {
       user: following_user,
-      top_product: top_product,
+      topProduct: top_product,
     };
 
     followings.push(single_following)
