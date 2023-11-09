@@ -147,6 +147,8 @@ export function signin(req, res) {
           user_id: user._id,
         });
 
+        console.log("need to very")
+
         return res.status(403).send({
           message: "User was not verified yet!",
           email: user.email,

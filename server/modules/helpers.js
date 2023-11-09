@@ -7,8 +7,10 @@ export const imageToBase64 = (file) => {
 };
 
 export const isWithinInterval = (startTime) => {
-  const currentTime = new Date();
-  const startDateTime = new Date(startTime);
+  const currentTime = Date.now();
+  console.log(currentTime)
+  const startDateTime = new Date(startTime).getTime();
+  console.log(startDateTime)
   const differenceInMilliseconds = currentTime - startDateTime;
   const fifteenMinutesInMilliseconds = 15 * 60 * 1000; // 15 minutes in milliseconds
 
