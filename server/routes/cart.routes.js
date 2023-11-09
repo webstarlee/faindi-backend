@@ -1,7 +1,9 @@
 import { authJwt } from "../middlewares";
 import {
     addCart,
-    updateCart
+    updateCart,
+    makeOrder,
+    orderDelivered
 } from "../controllers/cart.controller";
 
 export default function (app) {
@@ -15,4 +17,6 @@ export default function (app) {
   
   app.post("/api/cart/add", [authJwt.verifyToken], addCart);
   app.post("/api/cart/update", [authJwt.verifyToken], updateCart);
+  app.post("/api/order/make", [authJwt.verifyToken], makeOrder);
+  app.post("/api/order/delivered", [authJwt.verifyToken], orderDelivered);
 };

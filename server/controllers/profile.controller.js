@@ -1,4 +1,4 @@
-import { Category, Product, User, Follow, Cart } from "../models";
+import { Category, Product, User, Follow, Cart, Order } from "../models";
 import validateProfileInput from "../validation/profile";
 import { hashSync, compareSync } from "bcryptjs";
 
@@ -135,7 +135,28 @@ async function getProfileItems(req, res) {
     total_carts.push(single_cart);
   });
 
-  console.log(total_carts);
+  const orders = await Order.find({buyer_id: me._id});
+  var order_prod_ids = [];
+  orders.map((_order) => {
+    order_prod_ids.push(_order.product_id);
+  });
+
+  const order_related_products = await Product.find({_id: {"$in": order_prod_ids}});
+  var order_datas = []
+  orders.map((_order) => {
+    const ord_product = order_related_products.filter((prod) => prod._id.toString() === _order.product_id.toString())[0];
+    const ord_product_user = users.filter((user) => user._id.toString() === ord_product.owner.toString())[0];
+    const single_ord_product = {
+      _id: _order._id,
+      seller: ord_product_user,
+      product: ord_product,
+      orderTime: _order.created_at,
+      delivered: _order.delivered,
+    };
+    order_datas.push(single_ord_product);
+  });
+
+  console.log(order_datas);
 
   return res.status(200).send({
     own_products: own_products,
@@ -143,6 +164,7 @@ async function getProfileItems(req, res) {
     feedbacks: feedbacks,
     followings: followings,
     carts: total_carts,
+    orders: order_datas,
     total_rate: totral_rate_average,
     total_feedback_count: total_feedback_count
   });
