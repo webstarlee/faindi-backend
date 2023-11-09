@@ -69,13 +69,13 @@ export function verify(req, res) {
 
       if (isWithinInterval(token.created_at)) {
         if (Number(verify_num) !== Number(token.verify_number)) {
-          return res.status(401).send({
+          return res.status(400).send({
             message: "Verify code is invalid.",
           });
         }
         const user = await User.findById(token.user_id);
         if (!user) {
-          return res.status(404).send({
+          return res.status(400).send({
             message: "Can not find User.",
           });
         }
@@ -102,6 +102,7 @@ export function verify(req, res) {
             username: user.username,
             email: user.email,
             avatar: user.avatar,
+            cover: user.cover,
             title: user.title,
             bio: user.bio,
           },
@@ -173,6 +174,7 @@ export function signin(req, res) {
           username: user.username,
           email: user.email,
           avatar: user.avatar,
+          cover: user.cover,
           title: user.title,
           bio: user.bio,
         },

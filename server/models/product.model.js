@@ -72,7 +72,7 @@ const Product = model(
     ],
     created_at: {
       type: Date,
-      default: Date.now(),
+      default: new Date(),
     },
   })
 );
