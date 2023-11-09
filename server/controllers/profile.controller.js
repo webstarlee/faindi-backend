@@ -1,4 +1,4 @@
-import { Category, Product, User, Follow } from "../models";
+import { Category, Product, User, Follow, Cart } from "../models";
 import validateProfileInput from "../validation/profile";
 import { hashSync, compareSync } from "bcryptjs";
 
@@ -102,13 +102,47 @@ async function getProfileItems(req, res) {
     };
 
     followings.push(single_following)
-  })
+  });
+
+  const user_carts = await Cart.find({buyer_id: me._id});
+  var cart_product_ids = [];
+  var cart_seller_ids = [];
+  if (user_carts.length>0) {
+    user_carts.map((cart) => {
+      cart_seller_ids.push(cart.seller_id);
+      cart.products.map((prod) => {
+        cart_product_ids.push(prod.product_id);
+      });
+    })
+  }
+
+  const cart_related_users = await User.find({_id: {"$in": cart_seller_ids}});
+  const cart_related_products = await Product.find({_id: {"$in": cart_product_ids}});
+
+  var total_carts = [];
+  user_carts.map((cart) => {
+    var cart_products = [];
+    cart.products.map((cart_product) => {
+      const cart_single_product = cart_related_products.filter((prod) => prod._id.toString() === cart_product.product_id.toString())[0];
+      cart_products.push(cart_single_product);
+    });
+    const cart_seller = cart_related_users.filter((user) => user._id.toString() === cart.seller_id.toString())[0];
+
+    const single_cart = {
+      seller: cart_seller,
+      products: cart_products,
+    };
+    total_carts.push(single_cart);
+  });
+
+  console.log(total_carts);
 
   return res.status(200).send({
     own_products: own_products,
     like_products: like_products,
     feedbacks: feedbacks,
     followings: followings,
+    carts: total_carts,
     total_rate: totral_rate_average,
     total_feedback_count: total_feedback_count
   });

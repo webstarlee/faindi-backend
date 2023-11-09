@@ -9,4 +9,5 @@ export { default as Token } from "./token.model";
 export { default as Category } from "./category.model";
 export { default as Product } from "./product.model";
 export { default as Follow } from "./follow.model";
+export { default as Cart } from "./cart.model";
 export { default as Notification } from "./notification.model";

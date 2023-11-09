@@ -7,7 +7,13 @@ import bodyParser from "body-parser";
 import swaggerUi from "swagger-ui-express";
 import { DB, MongoUri } from "./config/db.config";
 import { categorySeed, roleAdminSeed } from "./seeds";
-import { authRoutes, userRoutes, productRoutes, profileRoutes } from "./routes/index";
+import {
+  authRoutes,
+  userRoutes,
+  productRoutes,
+  profileRoutes,
+  cartRoutes,
+} from "./routes/index";
 import mongoose from "./models";
 import swaggerDoc from "./swaggerDoc.js";
 var app = express();
@@ -44,6 +50,7 @@ mongoose
     process.exit();
   });
 
+cartRoutes(app);
 authRoutes(app);
 userRoutes(app);
 productRoutes(app);
