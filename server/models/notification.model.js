@@ -27,8 +27,12 @@ const Notification = model(
         type: Boolean,
         default: false,
       },
+      created_at: {
+        type: Date,
+        default: () => { return new Date() },
+      },
     },
-    { timestamps: true }
+    { timestamps: false }
   )
 );
 

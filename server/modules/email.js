@@ -19,15 +19,15 @@ emailQueue.process(async (job) => {
     port: 465,
     secure: true,
     auth: {
-      user: "tuki@faindit.fi",
-      pass: "_DanielLee9",
+      user: "noreply@faindit.fi",
+      pass: "EEvertVaavert9999___!",
     },
   });
 
   console.log("sending email");
 
   await transporter.sendMail({
-    from: '"FAINDI" <tuki@faindit.fi',
+    from: '"FAINDI" <noreply@faindit.fi>',
     to: to,
     subject: "Faindi: " + subject,
     text: body,

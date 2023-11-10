@@ -151,6 +151,8 @@ async function getProfileItems(req, res) {
       seller: ord_product_user,
       product: ord_product,
       orderTime: _order.created_at,
+      shipped: _order.shipped,
+      readyPick: _order.ready_pick,
       delivered: _order.delivered,
     };
     order_datas.push(single_ord_product);

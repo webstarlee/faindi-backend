@@ -17,13 +17,21 @@ const Order = model(
       type: String,
       ref: "Product",
     },
+    shipped: {
+      type: Boolean,
+      default: false,
+    },
+    ready_pick: {
+      type: Boolean,
+      default: false,
+    },
     delivered: {
       type: Boolean,
       default: false,
     },
     created_at: {
       type: Date,
-      default: new Date(),
+      default:() => { return new Date() },
     },
   })
 );

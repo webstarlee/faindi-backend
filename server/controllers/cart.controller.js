@@ -15,11 +15,10 @@ export async function addCart(req, res) {
     return res.status(404).send({ message: "Product can not find" });
   }
 
-  if (Number(product.quantity) === Number(product.sold)) {
+  if (Number(product.quantity) < 1) {
     return res.status(404).send({ message: "Product already sold out!" });
   }
 
-  console.log("passed quantity");
   const cart = await Cart.findOne({ seller_id: product.owner });
   if (cart) {
     const checkCartProduct = cart.products.filter(
@@ -105,7 +104,7 @@ export async function makeOrder(req, res) {
   const cart_related_products = await Product.find({_id: {"$in": cart_product_ids}});
   var outdated_product_ids = [];
   cart_related_products?.map((product) => {
-    if (Number(product.quantity) <= Number(product.sold)) {
+    if (Number(product.quantity) < 1) {
       outdated_product_ids.push(product._id)
     }
   });
@@ -143,14 +142,16 @@ export async function makeOrder(req, res) {
 
   console.log(newOrders);
   var newOrderDatas = [];
-  newOrders.map((_new_orders) => {
-    const order_product = cart_related_products.filter((_order_prod) => _order_prod._id.toString() === _new_orders.product_id.toString())[0]
+  newOrders.map((_new_order) => {
+    const order_product = cart_related_products.filter((_order_prod) => _order_prod._id.toString() === _new_order.product_id.toString())[0]
     const single_ord_data = {
-      _id: _new_orders._id,
+      _id: _new_order._id,
       seller: seller,
       product: order_product,
-      orderTime: _new_orders.created_at,
-      delivered: _new_orders.delivered,
+      orderTime: _new_order.created_at,
+      shipped: _new_order.shipped,
+      readyPick: _new_order.ready_pick,
+      delivered: _new_order.delivered,
     };
 
     newOrderDatas.push(single_ord_data)
@@ -166,6 +167,48 @@ export async function makeOrder(req, res) {
   return res.status(200).send({
     message: "Order completed!",
     orders: newOrderDatas
+  });
+}
+
+export async function orderShipped(req, res) {
+  const me = await User.findById(req.id);
+  if (!me) {
+    return res.status(401).send({ message: "Permission  denied" });
+  }
+
+  const { order_id } = req.body;
+
+  const order = await Order.findById(order_id);
+  if (!order) {
+    return res.status(404).send({ message: "Order can not find!" });
+  }
+
+  order.shipped = true;
+  await order.save();
+
+  return res.status(200).send({
+    message: "Order Shipped"
+  });
+}
+
+export async function orderReadyPick(req, res) {
+  const me = await User.findById(req.id);
+  if (!me) {
+    return res.status(401).send({ message: "Permission  denied" });
+  }
+
+  const { order_id } = req.body;
+
+  const order = await Order.findById(order_id);
+  if (!order) {
+    return res.status(404).send({ message: "Order can not find!" });
+  }
+
+  order.ready_pick = true;
+  await order.save();
+
+  return res.status(200).send({
+    message: "Order Ready to pick up"
   });
 }
 

@@ -33,13 +33,13 @@ const Product = model(
       type: Number,
       required: true,
     },
-    sold: {
-      type: Number,
-      default: 0,
-    },
     price: {
       type: Number,
       required: true,
+    },
+    reduced_price: {
+      type: Number,
+      default: 0
     },
     description: {
       type: String,
@@ -70,9 +70,13 @@ const Product = model(
         },
       },
     ],
+    sell_disable: {
+      type: Boolean,
+      default: false
+    },
     created_at: {
       type: Date,
-      default: new Date(),
+      default: () => { return new Date() },
     },
   })
 );

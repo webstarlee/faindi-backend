@@ -5,28 +5,30 @@ import createNotification from "../helpers/notification";
 async function getAllProductsCategories(req, res) {
   const users = await User.find({});
   const categories = await Category.find({});
-  const products = await Product.find({});
+  const products = await Product.find({sell_disable: false});
   let result_products = [];
   products?.map((product) => {
-    const product_user = users.filter((user) => user._id.toString() === product.owner);
-    const product_category = categories.filter(
+    const product_users = users.filter((user) => user._id.toString() === product.owner);
+    const product_categories = categories.filter(
       (category) => category._id.toString() === product.category_id
     );
-    const single_product = {
-      _id: product._id,
-      owner: product_user[0],
-      category: product_category[0],
-      title: product.title,
-      medias: product.medias,
-      size: product.size,
-      quantity: product.quantity,
-      sold: product.sold,
-      price: product.price,
-      description: product.description,
-      likes: product.likes,
-      feedbacks: product.feedbacks,
-    };
-    result_products.push(single_product);
+    if (product_users.length > 0 && product_categories.length>0) {
+      const single_product = {
+        _id: product._id,
+        owner: product_users[0],
+        category: product_categories[0],
+        title: product.title,
+        medias: product.medias,
+        size: product.size,
+        quantity: product.quantity,
+        price: product.price,
+        reduced_price: product.reduced_price,
+        description: product.description,
+        likes: product.likes,
+        feedbacks: product.feedbacks,
+      };
+      result_products.push(single_product);
+    }
   });
 
   res.status(200).json({
@@ -37,6 +39,11 @@ async function getAllProductsCategories(req, res) {
 }
 
 async function saveProduct(req, res) {
+  const me = await User.findById(req.id);
+  if (!me) {
+    return res.status(401).send({ message: "Permission  denied" });
+  }
+
   //Form Valdiation
   const { errors, isValid } = ValidateProductInput(req.body);
   if (!isValid) {
@@ -45,10 +52,6 @@ async function saveProduct(req, res) {
 
   const { medias, title, quantity, price, description, category_id, size } = req.body;
 
-  const me = await User.findById(req.id);
-  if (!me) {
-    return res.status(401).send({ message: "Permission  denied" });
-  }
   const category = await Category.findById(category_id);
   if (!category) {
     return res.status(400).send({ message: "Can not find Category" });
@@ -73,11 +76,12 @@ async function saveProduct(req, res) {
     medias: newProduct.medias,
     size: newProduct.size,
     quantity: newProduct.quantity,
-    sold: newProduct.sold,
     price: newProduct.price,
+    reduced_price: newProduct.reduced_price,
     description: newProduct.description,
     likes: newProduct.likes,
     feedbacks: newProduct.feedbacks,
+    sell_disable: false
   }
 
   return res.json({
@@ -88,6 +92,11 @@ async function saveProduct(req, res) {
 }
 
 async function updateProduct(req, res) {
+  const me = await User.findById(req.id);
+  if (!me) {
+    return res.status(401).send({ message: "Permission  denied" });
+  }
+
   //Form Valdiation
   const { errors, isValid } = ValidateProductInput(req.body);
   if (!isValid) {
@@ -103,6 +112,7 @@ async function updateProduct(req, res) {
     quantity,
     category_id,
     size,
+    reduced_price
   } = req.body;
 
   const product = await Product.findById(product_id);
@@ -114,20 +124,40 @@ async function updateProduct(req, res) {
     product.size = size;
     product.quantity = quantity;
     product.medias = medias;
+    product.reduced_price = reduced_price;
 
     const newone = await product.save();
-    if (newone) {
+
+    const category = await Category.findById(category_id);
+
+    const finalProduct = {
+      _id: newone._id,
+      owner: me,
+      category: category,
+      title: newone.title,
+      medias: newone.medias,
+      size: newone.size,
+      quantity: newone.quantity,
+      price: newone.price,
+      reduced_price: newone.reduced_price,
+      description: newone.description,
+      likes: newone.likes,
+      feedbacks: newone.feedbacks,
+      sell_disable: newone.sell_disable
+    }
+
+    if (category) {
       return res.json({
         success: true,
         message: "successfully updated",
-        product: newone,
-      });
+        product: finalProduct,
+      }); 
     }
+
+    return res.status(400).json("Wrong Api call!");
+
   } else {
-    return res.json({
-      success: false,
-      message: "Not found Product!",
-    });
+    return res.status(400).json("Not found Product!");
   }
 }
 
