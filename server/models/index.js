@@ -12,3 +12,5 @@ export { default as Follow } from "./follow.model";
 export { default as Cart } from "./cart.model";
 export { default as Order } from "./order.model";
 export { default as Notification } from "./notification.model";
+export { default as Chat } from "./chat.model";
+export { default as Message } from "./message.model";

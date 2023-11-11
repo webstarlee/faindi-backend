@@ -13,6 +13,7 @@ import {
   productRoutes,
   profileRoutes,
   cartRoutes,
+  chatRoutes,
 } from "./routes/index";
 import mongoose from "./models";
 import swaggerDoc from "./swaggerDoc.js";
@@ -50,6 +51,7 @@ mongoose
     process.exit();
   });
 
+chatRoutes(app);
 cartRoutes(app);
 authRoutes(app);
 userRoutes(app);

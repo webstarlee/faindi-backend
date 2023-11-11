@@ -8,7 +8,7 @@ import debugLib from "debug";
 import http from "http";
 import socketIO from "socket.io";
 const debug = debugLib("backend:server");
-// import { saveMessage } from "../controllers/message.controller";
+import { saveMessage } from "../controllers/chat.controller";
 
 /**
  * Get port from environment and store in Express.
@@ -29,10 +29,8 @@ const io = socketIO(server, {
 });
 
 var userIdToSocketIdMap = {}; // maps user ID to socket object
-var socketIdToUserIdMap = {}; // maps socket ID to user object
 
 const getSocketIdFromUserID = (userid) => userIdToSocketIdMap[userid];
-const getUserIdFromSocketID = (socketid) => socketIdToUserIdMap[socketid];
 
 io.on("connection", async (socket) => {
   socket.on("disconnect", function () {
@@ -40,19 +38,13 @@ io.on("connection", async (socket) => {
   });
 
   socket.on("message", async function (params) {
-    io.to(getSocketIdFromUserID(params.toUserId)).emit("newMsg", params);
-    // await saveMessage(params);
+    console.log(params)
+    io.to(params.to_user_id).emit("new_msg", params);
+    await saveMessage(params);
   });
 
-  socket.on("join_room", function (params) {
-    socket.join(params.roomName);
-  });
-
-  socket.on("one2onejoin", async ({ fromUserId, socketId }) => {
-    userIdToSocketIdMap[fromUserId] = socketId;
-  });
-  socket.on("disconnected", async ({ fromUserId }) => {
-    delete userIdToSocketIdMap[fromUserId];
+  socket.on("chat_join", async ({ user_id}) => {
+    socket.join(user_id);
   });
 });
 
