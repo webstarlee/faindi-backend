@@ -1,6 +1,7 @@
 import { authJwt } from "../middlewares";
 import {
-    getChatList
+    getChatList,
+    sendMessageFromPostman
 } from "../controllers/chat.controller";
 
 export default function (app) {
@@ -13,4 +14,5 @@ export default function (app) {
   });
   
   app.get("/api/chat/get-list", [authJwt.verifyToken], getChatList);
+  app.post("/api/chat/send-msg", [authJwt.verifyToken], sendMessageFromPostman);
 };

@@ -8,7 +8,8 @@ import debugLib from "debug";
 import http from "http";
 import socketIO from "socket.io";
 const debug = debugLib("backend:server");
-import { saveMessage } from "../controllers/chat.controller";
+import { saveMessage, readMessage } from "../controllers/chat.controller";
+import { User } from "../models";
 
 /**
  * Get port from environment and store in Express.
@@ -22,7 +23,7 @@ app.set("port", port);
  */
 
 var server = http.createServer(app);
-const io = socketIO(server, {
+export const io = socketIO(server, {
   cors: {
     origin: "*",
   },
@@ -38,9 +39,11 @@ io.on("connection", async (socket) => {
   });
 
   socket.on("message", async function (params) {
-    console.log(params)
-    io.to(params.to_user_id).emit("new_msg", params);
     await saveMessage(params);
+  });
+
+  socket.on("readmessage", async function (params) {
+    await readMessage(params);
   });
 
   socket.on("chat_join", async ({ user_id}) => {

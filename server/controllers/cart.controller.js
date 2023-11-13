@@ -133,6 +133,8 @@ export async function makeOrder(req, res) {
       seller_id: product.owner,
       buyer_id: me._id,
       product_id: product._id,
+      shipped: true,
+      ready_pick: true
     };
     orderDatas.push(single_order);
     sold_product_ids.push(product._id)
