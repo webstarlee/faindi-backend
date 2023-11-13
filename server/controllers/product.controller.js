@@ -164,12 +164,18 @@ async function updateProduct(req, res) {
 }
 
 async function likeProduct(req, res) {
+  const me = await User.findById(req.id);
+  if (!me) {
+    return res.status(401).send({ message: "Permission  denied" });
+  }
+
   const { product_id } = req.body;
   const product = await Product.findById(product_id);
   if (product) {
     const isLiked = product.likes.some(
       (like) => like.user_id.toString() === req.id.toString()
     );
+
     if (!isLiked) {
       product.likes.push({ user_id: req.id });
     } else {
@@ -179,14 +185,15 @@ async function likeProduct(req, res) {
       product.likes.splice(_index, 1);
     }
     const newone = await product.save();
+
     if (!isLiked) {
-      try {
-        await createNotification(
-          req.id,
-          newone.owner,
-          `favorited your listing "${newone.title}"`
-        );
-      } catch (error) {}
+      const notify_content = `@${me.username} favorited your listing '${product.title}'`;
+      await createNotification(
+        newone.owner,
+        me._id,
+        "common",
+        notify_content,
+      );
     }
     return res.json({
       success: true,
@@ -214,14 +221,15 @@ async function feedBack(req, res) {
 
   product.feedbacks.push({ rate, comment, user_id: req.id });
   const newone = await product.save();
-  const user = await User.findById(req.id);
-  await new Notification({
-    fromUserId: req.id,
-    toUserId: product.owner,
-    isReview: true,
-    rate: rate,
-    content: user.username + " has left you a review.",
-  }).save();
+
+  const notify_content = `@${me.username} has left you a review`;
+  await createNotification(
+    product.owner,
+    me._id,
+    "review",
+    notify_content,
+    rate
+  );
   
   return res.status(200).json({
     success: true,

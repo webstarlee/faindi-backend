@@ -1,4 +1,4 @@
-import { User, Product, Category, Follow } from "../models";
+import { User, Product, Category, Follow, Notification } from "../models";
 
 export async function userBoard(req, res) {
   const user = await User.findById(req.id);
@@ -45,8 +45,8 @@ export async function getUserProfile(req, res) {
       medias: product.medias,
       size: product.size,
       quantity: product.quantity,
-      sold: product.sold,
       price: product.price,
+      reduced_price: product.reduced_price,
       description: product.description,
       likes: product.likes,
       feedbacks: product.feedbacks,
@@ -196,4 +196,39 @@ export async function newUsers(req, res) {
   return res.status(200).send({
     new_users: new_users_data
   });
+}
+
+export async function getMyNotifications(req, res) {
+  const me = await User.findById(req.id);
+  if (!me) {
+    return res.status(401).send({ message: "Permission  denied" });
+  }
+
+  const notifications = await Notification.find({user_id: me._id});
+  if (!notifications) {
+    return res.status(200).send({notifications: []});
+  }
+
+  let notify_user_ids = [];
+  notifications.map((notify) => {
+    notify_user_ids.push(notify.sender_id);
+  });
+
+  const notify_users = await User.find({_id: {"$in": notify_user_ids}});
+  let user_notifications = []
+  notifications.map((notify) => {
+    const notify_sender = notify_users.filter((notify_user) => notify_user._id.toString() === notify.sender_id.toString())[0]
+    if (notify_sender) {
+      const single_notify = {
+        sender: notify_sender,
+        notify_type: notify.notify_type,
+        content: notify.content,
+        rate: notify.rate,
+        price: notify.price
+      }
+      user_notifications.push(single_notify);
+    }
+  });
+
+  return res.status(200).send({notifications: user_notifications});
 }

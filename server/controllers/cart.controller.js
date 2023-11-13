@@ -1,5 +1,6 @@
 import { io } from "../bin/www";
 import { User, Product, Message, Order, Cart, Chat } from "../models";
+import createNotification from "../helpers/notification";
 
 export async function addCart(req, res) {
   const me = await User.findById(req.id);
@@ -11,7 +12,6 @@ export async function addCart(req, res) {
 
   const product = await Product.findById(product_id);
 
-  console.log(product);
   if (!product) {
     return res.status(404).send({ message: "Product can not find" });
   }
@@ -20,7 +20,9 @@ export async function addCart(req, res) {
     return res.status(404).send({ message: "Product already sold out!" });
   }
 
-  const cart = await Cart.findOne({ seller_id: product.owner });
+  console.log("padded");
+
+  const cart = await Cart.findOne({ $and: [{ seller_id: product.owner }, { buyer_id: me._id }], });
   if (cart) {
     const checkCartProduct = cart.products.filter(
       (prod) => prod.product_id.toString() === product._id.toString()
@@ -169,7 +171,7 @@ export async function makeOrder(req, res) {
 
   await Product.updateMany(
     { _id: { $in: sold_product_ids } },
-    { $inc: { sold: 1 } }
+    { $inc: { quantity: -1 } }
   );
 
   await cart.deleteOne();
@@ -242,6 +244,29 @@ export async function makeOrder(req, res) {
     console.log(response_data);
     io.to(me._id.toString()).emit("new_chat", response_data);
   }
+
+  let notify_content = `@${me.username} purchased ${orderDatas.length} ${orderDatas.length > 1? "items": "item"}`;
+  let order_price = 0;
+  newOrderDatas.map((order_data, index) => {
+    if (index>0) {
+      notify_content += ","
+    }
+    notify_content += " "+order_data.product.title;
+    if (order_data.product.reduced_price > 0) {
+      order_price += Number(order_data.product.reduced_price);
+    } else {
+      order_price += Number(order_data.product.price);
+    }
+  });
+
+  await createNotification(
+    seller._id,
+    me._id,
+    "order",
+    notify_content,
+    0,
+    order_price
+  );
 
   return res.status(200).send({
     message: "Order completed!",

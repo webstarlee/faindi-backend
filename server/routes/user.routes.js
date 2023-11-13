@@ -4,7 +4,8 @@ import {
   getUserProfile,
   followUser,
   unfollowUser,
-  newUsers
+  newUsers,
+  getMyNotifications
 } from "../controllers/user.controller";
 
 export default function (app) {
@@ -21,4 +22,5 @@ export default function (app) {
   app.get("/api/user/follow/:user_id", authJwt.verifyToken, followUser);
   app.get("/api/user/unfollow/:user_id", authJwt.verifyToken, unfollowUser);
   app.get("/api/user/new-users", [authJwt.verifyToken], newUsers);
+  app.get("/api/user/notifications", [authJwt.verifyToken], getMyNotifications);
 };

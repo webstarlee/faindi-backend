@@ -4,24 +4,28 @@ const Notification = model(
   "Notification",
   new Schema(
     {
-      fromUserId: {
+      user_id: {
         type: String,
         required: true,
       },
-      toUserId: {
+      sender_id: {
         type: String,
         required: true,
       },
       content: {
         type: String,
       },
-      isReview: {
-        type: Boolean,
-        default: false,
+      notify_type: {
+        type: String,
+        default: "common",
       },
       rate: {
         type: Number,
-        required: true,
+        default: 0
+      },
+      price: {
+        type: Number,
+        default: 0
       },
       read: {
         type: Boolean,
