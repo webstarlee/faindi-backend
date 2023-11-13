@@ -1,5 +1,5 @@
 import { io } from "../bin/www";
-import { User, Product, Category, Follow, Chat, Message } from "../models";
+import { User, Chat, Message } from "../models";
 
 export async function getChatList(req, res) {
   const me = await User.findById(req.id);
@@ -125,8 +125,8 @@ export async function saveMessage(req) {
       user: user_data,
       messages: chat_messages,
       unread_count: unread_count + 1,
-      is_seller: false, // not sure what is_seller is...
-      updated_at: Date.now(), // not sure how to get update_at
+      is_seller: chat.is_seller,
+      updated_at: Date.now(),
     };
     console.log(response_data);
 

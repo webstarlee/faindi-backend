@@ -1,4 +1,5 @@
-import { User, Product, Category, Order, Cart } from "../models";
+import { io } from "../bin/www";
+import { User, Product, Message, Order, Cart, Chat } from "../models";
 
 export async function addCart(req, res) {
   const me = await User.findById(req.id);
@@ -10,7 +11,7 @@ export async function addCart(req, res) {
 
   const product = await Product.findById(product_id);
 
-  console.log(product)
+  console.log(product);
   if (!product) {
     return res.status(404).send({ message: "Product can not find" });
   }
@@ -24,7 +25,7 @@ export async function addCart(req, res) {
     const checkCartProduct = cart.products.filter(
       (prod) => prod.product_id.toString() === product._id.toString()
     );
-    if (checkCartProduct.length>0) {
+    if (checkCartProduct.length > 0) {
       return res.status(404).send({ message: "Product already carted!" });
     }
 
@@ -67,7 +68,7 @@ export async function updateCart(req, res) {
     (prod) => prod.product_id.toString() !== product._id.toString()
   );
 
-  if (filtered_products.length>0) {
+  if (filtered_products.length > 0) {
     cart.products = filtered_products;
     await cart.save();
     return res.status(200).send({
@@ -99,30 +100,34 @@ export async function makeOrder(req, res) {
   var cart_product_ids = [];
   cart.products.map((prod) => {
     cart_product_ids.push(prod.product_id);
-  })
+  });
 
-  const cart_related_products = await Product.find({_id: {"$in": cart_product_ids}});
+  const cart_related_products = await Product.find({
+    _id: { $in: cart_product_ids },
+  });
   var outdated_product_ids = [];
   cart_related_products?.map((product) => {
     if (Number(product.quantity) < 1) {
-      outdated_product_ids.push(product._id)
+      outdated_product_ids.push(product._id);
     }
   });
 
-  if (outdated_product_ids.length>0) {
-    console.log("order incompleted")
-    var message = ""
-    const outdated_products = cart_related_products.filter((prod) => outdated_product_ids.includes(prod._id));
+  if (outdated_product_ids.length > 0) {
+    console.log("order incompleted");
+    var message = "";
+    const outdated_products = cart_related_products.filter((prod) =>
+      outdated_product_ids.includes(prod._id)
+    );
     outdated_products.map((out_prod) => {
       if (message === "") {
         message = out_prod.title;
       } else {
-        message = message+", "+out_prod.title;
+        message = message + ", " + out_prod.title;
       }
     });
 
     return res.status(400).send({
-      message: "Products "+message+" already sold out !"
+      message: "Products " + message + " already sold out !",
     });
   }
 
@@ -134,10 +139,10 @@ export async function makeOrder(req, res) {
       buyer_id: me._id,
       product_id: product._id,
       shipped: true,
-      ready_pick: true
+      ready_pick: true,
     };
     orderDatas.push(single_order);
-    sold_product_ids.push(product._id)
+    sold_product_ids.push(product._id);
   });
 
   const newOrders = await Order.insertMany(orderDatas);
@@ -145,7 +150,10 @@ export async function makeOrder(req, res) {
   console.log(newOrders);
   var newOrderDatas = [];
   newOrders.map((_new_order) => {
-    const order_product = cart_related_products.filter((_order_prod) => _order_prod._id.toString() === _new_order.product_id.toString())[0]
+    const order_product = cart_related_products.filter(
+      (_order_prod) =>
+        _order_prod._id.toString() === _new_order.product_id.toString()
+    )[0];
     const single_ord_data = {
       _id: _new_order._id,
       seller: seller,
@@ -156,8 +164,8 @@ export async function makeOrder(req, res) {
       delivered: _new_order.delivered,
     };
 
-    newOrderDatas.push(single_ord_data)
-  })
+    newOrderDatas.push(single_ord_data);
+  });
 
   await Product.updateMany(
     { _id: { $in: sold_product_ids } },
@@ -166,9 +174,78 @@ export async function makeOrder(req, res) {
 
   await cart.deleteOne();
 
+  const chat = await Chat.findOne({
+    $and: [{ "users.user_id": me._id }, { "users.user_id": seller_id }],
+  });
+
+  if (chat) {
+    const unread_count = chat.unread_count.filter(
+      (unread) => unread.user_id.toString() === me._id
+    )?.length;
+
+    await new Message({
+      chat_id: chat._id,
+      receiver_id: me._id,
+      sender_id: "Faindi",
+      is_faindi: true,
+      is_read: false,
+      content:
+        "The buyer has purchased the item. Thank you for using FAINDI! ✨",
+      medias: [],
+    }).save();
+
+    const chat_messages = await Message.find({ chat_id: chat._id }).sort({
+      created_at: 1,
+    });
+
+    const response_data = {
+      user: seller,
+      messages: chat_messages,
+      unread_count: unread_count + 1,
+      is_seller: chat.is_seller, // not sure what is_seller is...
+      updated_at: Date.now(), // not sure how to get update_at
+    };
+
+    console.log(response_data);
+
+    io.to(me._id.toString()).emit("new_chat", response_data);
+  } else {
+    const new_chat = new Chat({
+      users: [{ user_id: me._id }, { user_id: seller_id }],
+      buyers: [{ user_id: me._id }],
+      sellers: [{ user_id: seller_id }],
+      sender: "Faindi",
+      unread_count: [{ user_id: me._id }],
+    });
+
+    await new_chat.save();
+
+    const new_message = await new Message({
+      chat_id: new_chat._id,
+      receiver_id: me._id,
+      sender_id: "Faindi",
+      is_faindi: true,
+      is_read: false,
+      content:
+        "The buyer has purchased the item. Thank you for using FAINDI! ✨",
+      medias: [],
+    }).save();
+
+    const response_data = {
+      user: seller,
+      messages: [new_message],
+      unread_count: 1,
+      is_seller: false, // not sure what is_seller is...
+      updated_at: Date.now(), // not sure how to get update_at
+    };
+
+    console.log(response_data);
+    io.to(me._id.toString()).emit("new_chat", response_data);
+  }
+
   return res.status(200).send({
     message: "Order completed!",
-    orders: newOrderDatas
+    orders: newOrderDatas,
   });
 }
 
@@ -189,7 +266,7 @@ export async function orderShipped(req, res) {
   await order.save();
 
   return res.status(200).send({
-    message: "Order Shipped"
+    message: "Order Shipped",
   });
 }
 
@@ -210,7 +287,7 @@ export async function orderReadyPick(req, res) {
   await order.save();
 
   return res.status(200).send({
-    message: "Order Ready to pick up"
+    message: "Order Ready to pick up",
   });
 }
 
@@ -231,6 +308,6 @@ export async function orderDelivered(req, res) {
   await order.save();
 
   return res.status(200).send({
-    message: "Order Delivered"
+    message: "Order Delivered",
   });
 }

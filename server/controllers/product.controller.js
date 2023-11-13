@@ -5,14 +5,16 @@ import createNotification from "../helpers/notification";
 async function getAllProductsCategories(req, res) {
   const users = await User.find({});
   const categories = await Category.find({});
-  const products = await Product.find({sell_disable: false});
+  const products = await Product.find({ sell_disable: false });
   let result_products = [];
   products?.map((product) => {
-    const product_users = users.filter((user) => user._id.toString() === product.owner);
+    const product_users = users.filter(
+      (user) => user._id.toString() === product.owner
+    );
     const product_categories = categories.filter(
       (category) => category._id.toString() === product.category_id
     );
-    if (product_users.length > 0 && product_categories.length>0) {
+    if (product_users.length > 0 && product_categories.length > 0) {
       const single_product = {
         _id: product._id,
         owner: product_users[0],
@@ -50,7 +52,8 @@ async function saveProduct(req, res) {
     return res.status(400).json(errors);
   }
 
-  const { medias, title, quantity, price, description, category_id, size } = req.body;
+  const { medias, title, quantity, price, description, category_id, size } =
+    req.body;
 
   const category = await Category.findById(category_id);
   if (!category) {
@@ -81,13 +84,13 @@ async function saveProduct(req, res) {
     description: newProduct.description,
     likes: newProduct.likes,
     feedbacks: newProduct.feedbacks,
-    sell_disable: false
-  }
+    sell_disable: false,
+  };
 
   return res.json({
     success: true,
     message: "Your product has been added.",
-    product: product
+    product: product,
   });
 }
 
@@ -112,7 +115,7 @@ async function updateProduct(req, res) {
     quantity,
     category_id,
     size,
-    reduced_price
+    reduced_price,
   } = req.body;
 
   const product = await Product.findById(product_id);
@@ -143,19 +146,18 @@ async function updateProduct(req, res) {
       description: newone.description,
       likes: newone.likes,
       feedbacks: newone.feedbacks,
-      sell_disable: newone.sell_disable
-    }
+      sell_disable: newone.sell_disable,
+    };
 
     if (category) {
       return res.json({
         success: true,
         message: "successfully updated",
         product: finalProduct,
-      }); 
+      });
     }
 
     return res.status(400).json("Wrong Api call!");
-
   } else {
     return res.status(400).json("Not found Product!");
   }
@@ -195,43 +197,37 @@ async function likeProduct(req, res) {
 }
 
 async function feedBack(req, res) {
+  const me = await User.findById(req.id);
+  if (!me) {
+    return res.status(401).send({ message: "Permission  denied" });
+  }
+
   const { product_id, rate, comment } = req.body;
 
-  let errors = {};
-  if (!rate) {
-    errors.rate = "Rate field is required.";
-  }
-  if (!comment) {
-    errors.comment = "Comment field is required.";
-  }
-
-  if (Object.values(errors).length) {
-    return res.status(400).json(errors);
-  }
-
   const product = await Product.findById(product_id);
-  if (product) {
-    product.feedbacks.push({ rate, comment, user_id: req.id });
-    const newone = await product.save();
-    const user = await User.findById(req.id);
-    await new Notification({
-      fromUserId: req.id,
-      toUserId: product.owner,
-      isReview: true,
-      rate: rate,
-      content: user.username + " has left you a review.",
-    }).save();
-    return res.status(200).json({
-      success: true,
-      product: newone,
-      message: "You has given a feedback successfully.",
-    });
-  } else {
+  if (!product) {
     return res.status(400).json({
       success: false,
       message: "Not found product.",
     });
   }
+
+  product.feedbacks.push({ rate, comment, user_id: req.id });
+  const newone = await product.save();
+  const user = await User.findById(req.id);
+  await new Notification({
+    fromUserId: req.id,
+    toUserId: product.owner,
+    isReview: true,
+    rate: rate,
+    content: user.username + " has left you a review.",
+  }).save();
+  
+  return res.status(200).json({
+    success: true,
+    product: newone,
+    message: "You has given a feedback successfully.",
+  });
 }
 
 export {
