@@ -29,10 +29,6 @@ const Product = model(
       type: String,
       required: true,
     },
-    quantity: {
-      type: Number,
-      required: true,
-    },
     price: {
       type: Number,
       required: true,
@@ -70,7 +66,11 @@ const Product = model(
         },
       },
     ],
-    sell_disable: {
+    is_recycle: {
+      type: Boolean,
+      default: false
+    },
+    sold: {
       type: Boolean,
       default: false
     },

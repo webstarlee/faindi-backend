@@ -1,4 +1,4 @@
-import { Category, Product, User, Follow, Cart, Order } from "../models";
+import { Category, Product, User, Follow, Cart, Order, Chat, Message } from "../models";
 import validateProfileInput from "../validation/profile";
 import { hashSync, compareSync } from "bcryptjs";
 
@@ -9,13 +9,17 @@ async function getProfileItems(req, res) {
   }
   const users = await User.find({});
   const categories = await Category.find({});
-  const related_products = await Product.find({"$or": [{"likes.user_id": me._id}, {owner: me._id}]});
+  const related_products = await Product.find({
+    $or: [{ "likes.user_id": me._id }, { owner: me._id }],
+  });
 
   var own_products = [];
   var like_products = [];
 
   related_products.map((product, _index) => {
-    const product_user = users.filter((user) => user._id.toString() === product.owner);
+    const product_user = users.filter(
+      (user) => user._id.toString() === product.owner
+    );
     const product_category = categories.filter(
       (category) => category._id.toString() === product.category_id
     );
@@ -26,12 +30,13 @@ async function getProfileItems(req, res) {
       title: product.title,
       medias: product.medias,
       size: product.size,
-      quantity: product.quantity,
-      sold: product.sold,
       price: product.price,
+      reduced_price: product.reduced_price,
       description: product.description,
       likes: product.likes,
       feedbacks: product.feedbacks,
+      is_recycle: product.is_recycle,
+      sold: product.sold,
     };
 
     if (product.owner == me._id) {
@@ -46,40 +51,53 @@ async function getProfileItems(req, res) {
   var total_rate_sum = 0;
   own_products.map((product, _index) => {
     if (product.feedbacks.length > 0) {
-      const rate_sum = product.feedbacks.map(feedback => feedback.rate).reduce((prev, curr) => prev + curr, 0);
+      const rate_sum = product.feedbacks
+        .map((feedback) => feedback.rate)
+        .reduce((prev, curr) => prev + curr, 0);
       total_rate_sum += rate_sum;
       const feedback_count = product.feedbacks.length;
-      const average_rate = Math.round(rate_sum/feedback_count);
+      const average_rate = Math.round(rate_sum / feedback_count);
       total_feedback_count += feedback_count;
-      const max_feedback = product.feedbacks.reduce((max, item) => (item.rate > max.rate ? item : max), product.feedbacks[0]);
+      const max_feedback = product.feedbacks.reduce(
+        (max, item) => (item.rate > max.rate ? item : max),
+        product.feedbacks[0]
+      );
       const best_feedback_text = max_feedback.comment;
       const single_feedback = {
         product: product,
         rate: average_rate,
-        comment: best_feedback_text
+        comment: best_feedback_text,
       };
       feedbacks.push(single_feedback);
     }
   });
 
-  const totral_rate_average = Math.round(total_rate_sum/total_feedback_count);
+  const totral_rate_average = Math.round(total_rate_sum / total_feedback_count);
 
-  const my_followings = await Follow.find({follower: me._id});
+  const my_followings = await Follow.find({ follower: me._id });
   var following_user_ids = [];
   var followings = [];
-  my_followings.map(follow => {
-    following_user_ids.push(follow.following)
+  my_followings.map((follow) => {
+    following_user_ids.push(follow.following);
   });
-  const followings_user_products = await Product.find({owner: {"$in": following_user_ids}});
-  
+  const followings_user_products = await Product.find({
+    owner: { $in: following_user_ids },
+  });
+
   my_followings.map((follow, index) => {
-    const following_user = users.filter((user) => user._id.toString() === follow.following.toString())[0];
-    const follow_products = followings_user_products.filter((prod) => prod.owner.toString() === follow.following.toString());
+    const following_user = users.filter(
+      (user) => user._id.toString() === follow.following.toString()
+    )[0];
+    const follow_products = followings_user_products.filter(
+      (prod) => prod.owner.toString() === follow.following.toString()
+    );
     var top_product = null;
 
-    if (follow_products.length> 0) {
-      const tmp_top_product = follow_products[0]
-      const product_category = categories.filter((cat) => cat._id.toString() === tmp_top_product.category_id.toString());
+    if (follow_products.length > 0) {
+      const tmp_top_product = follow_products[0];
+      const product_category = categories.filter(
+        (cat) => cat._id.toString() === tmp_top_product.category_id.toString()
+      );
       top_product = {
         _id: tmp_top_product._id,
         owner: following_user,
@@ -87,12 +105,13 @@ async function getProfileItems(req, res) {
         title: tmp_top_product.title,
         medias: tmp_top_product.medias,
         size: tmp_top_product.size,
-        quantity: tmp_top_product.quantity,
-        sold: tmp_top_product.sold,
         price: tmp_top_product.price,
+        reduced_price: tmp_top_product.reduced_price,
         description: tmp_top_product.description,
         likes: tmp_top_product.likes,
         feedbacks: tmp_top_product.feedbacks,
+        is_recycle: tmp_top_product.is_recycle,
+        sold: tmp_top_product.sold,
       };
     }
 
@@ -101,32 +120,38 @@ async function getProfileItems(req, res) {
       topProduct: top_product,
     };
 
-    followings.push(single_following)
+    followings.push(single_following);
   });
 
-  const user_carts = await Cart.find({buyer_id: me._id});
+  const user_carts = await Cart.find({ buyer_id: me._id });
   var cart_product_ids = [];
   var cart_seller_ids = [];
-  if (user_carts.length>0) {
+  if (user_carts.length > 0) {
     user_carts.map((cart) => {
       cart_seller_ids.push(cart.seller_id);
       cart.products.map((prod) => {
         cart_product_ids.push(prod.product_id);
       });
-    })
+    });
   }
 
-  const cart_related_users = await User.find({_id: {"$in": cart_seller_ids}});
-  const cart_related_products = await Product.find({_id: {"$in": cart_product_ids}});
+  const cart_related_users = await User.find({ _id: { $in: cart_seller_ids } });
+  const cart_related_products = await Product.find({
+    _id: { $in: cart_product_ids },
+  });
 
   var total_carts = [];
   user_carts.map((cart) => {
     var cart_products = [];
     cart.products.map((cart_product) => {
-      const cart_single_product = cart_related_products.filter((prod) => prod._id.toString() === cart_product.product_id.toString())[0];
+      const cart_single_product = cart_related_products.filter(
+        (prod) => prod._id.toString() === cart_product.product_id.toString()
+      )[0];
       cart_products.push(cart_single_product);
     });
-    const cart_seller = cart_related_users.filter((user) => user._id.toString() === cart.seller_id.toString())[0];
+    const cart_seller = cart_related_users.filter(
+      (user) => user._id.toString() === cart.seller_id.toString()
+    )[0];
 
     const single_cart = {
       seller: cart_seller,
@@ -135,17 +160,23 @@ async function getProfileItems(req, res) {
     total_carts.push(single_cart);
   });
 
-  const orders = await Order.find({buyer_id: me._id});
+  const orders = await Order.find({ buyer_id: me._id });
   var order_prod_ids = [];
   orders.map((_order) => {
     order_prod_ids.push(_order.product_id);
   });
 
-  const order_related_products = await Product.find({_id: {"$in": order_prod_ids}});
-  var order_datas = []
+  const order_related_products = await Product.find({
+    _id: { $in: order_prod_ids },
+  });
+  var order_datas = [];
   orders.map((_order) => {
-    const ord_product = order_related_products.filter((prod) => prod._id.toString() === _order.product_id.toString())[0];
-    const ord_product_user = users.filter((user) => user._id.toString() === ord_product.owner.toString())[0];
+    const ord_product = order_related_products.filter(
+      (prod) => prod._id.toString() === _order.product_id.toString()
+    )[0];
+    const ord_product_user = users.filter(
+      (user) => user._id.toString() === ord_product.owner.toString()
+    )[0];
     const single_ord_product = {
       _id: _order._id,
       seller: ord_product_user,
@@ -168,7 +199,7 @@ async function getProfileItems(req, res) {
     carts: total_carts,
     orders: order_datas,
     total_rate: totral_rate_average,
-    total_feedback_count: total_feedback_count
+    total_feedback_count: total_feedback_count,
   });
 }
 
@@ -200,13 +231,16 @@ async function getProfile(req, res) {
       title: product.title,
       medias: product.medias,
       price: product.price,
+      reduced_price: product.reduced_price,
       description: product.description,
       size: product.size,
-      quantity: product.quantity,
       likes: product.likes,
       feedbacks: product.feedbacks,
+      is_recycle: product.is_recycle,
+      sold: product.sold,
     };
   });
+
   for (const product of products) {
     const product_category = categories.filter(
       (category) => category._id.toString() === product.category_id
@@ -222,11 +256,13 @@ async function getProfile(req, res) {
       title: product.title,
       medias: product.medias,
       price: product.price,
+      reduced_price: product.reduced_price,
       description: product.description,
       size: product.size,
-      quantity: product.quantity,
       likes: product.likes,
       feedbacks: product.feedbacks,
+      is_recycle: product.is_recycle,
+      sold: product.sold,
     });
 
     let totalRate = 0;
@@ -235,6 +271,7 @@ async function getProfile(req, res) {
       rate: 0,
       comment: "",
     };
+
     if (product.feedbacks.length) {
       maxFeedback.comment = product.feedbacks[0].comment;
       for (const feedback of product.feedbacks) {
@@ -283,7 +320,7 @@ async function updateAvatar(req, res) {
 
   user.avatar = avatar;
   await user.save();
-  
+
   return res.status(200).json({
     success: true,
     message: "Your photo has changed successfullly.",
@@ -308,7 +345,7 @@ async function updateCover(req, res) {
   }
 
   user.cover = cover;
-  await user.save()
+  await user.save();
 
   return res.status(200).json({
     success: true,
@@ -398,13 +435,73 @@ async function updateEmailFullname(req, res) {
     return res.status(401).send({ message: "Permission  denied" });
   }
 
-  const {fullname, email} = req.body;
+  const { fullname, email } = req.body;
 
   me.fullname = fullname;
   me.email = email;
   await me.save();
 
-  return res.status(200).send({success: true});
+  return res.status(200).send({ success: true });
+}
+
+async function deleteProfile(req, res) {
+  const user = await User.findById(req.id);
+  if (!user) {
+    return res.status(401).send({ message: "Permission  denied" });
+  }
+
+  const own_products = await Product.find({owner: user._id});
+  if (own_products.length === 0) {
+    await Cart.deleteMany({buyer_id: user._id});
+    await Order.deleteMany({buyer_id: user._id});
+    await Chat.deleteMany({"users.user_id": user._id});
+    await Message.deleteMany({"$or": [{receiver_id: user._id}, {sender_id: user._id}]});
+
+    await user.deleteOne();
+
+    return res.status(200).json({
+      success: true,
+      message: "Your Account deleted successfullly.",
+    });
+  }
+
+
+  let own_product_ids = []
+  if (own_products.length > 0) {
+    own_products.map((product) => {
+      own_product_ids.push(product._id);
+    })
+  }
+
+  const exist_carts = await Cart.find({"products.product_id": {"$in": own_product_ids}});
+  if (exist_carts.length > 0) {
+    return res.status(404).json({
+      success: false,
+      message: "Your product put in carts.",
+    });
+  }
+
+  const exist_orders = await Order.find({product_id: {"$in": own_product_ids}});
+
+  if (exist_carts.length > 0) {
+    return res.status(404).json({
+      success: false,
+      message: "Your product put in Orders.",
+    });
+  }
+
+  await Product.deleteMany({owner: user._id});
+  await Cart.deleteMany({buyer_id: user._id});
+  await Order.deleteMany({buyer_id: user._id});
+  await Chat.deleteMany({"users.user_id": user._id});
+  await Message.deleteMany({"$or": [{receiver_id: user._id}, {sender_id: user._id}]});
+
+  await user.deleteOne();
+
+  return res.status(200).json({
+    success: true,
+    message: "Your Account deleted successfullly.",
+  });
 }
 
 export {
@@ -414,5 +511,6 @@ export {
   updatePassword,
   getProfileItems,
   getProfile,
-  updateEmailFullname
+  updateEmailFullname,
+  deleteProfile
 };

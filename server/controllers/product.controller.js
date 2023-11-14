@@ -5,7 +5,7 @@ import createNotification from "../helpers/notification";
 async function getAllProductsCategories(req, res) {
   const users = await User.find({});
   const categories = await Category.find({});
-  const products = await Product.find({ sell_disable: false });
+  const products = await Product.find();
   let result_products = [];
   products?.map((product) => {
     const product_users = users.filter(
@@ -22,12 +22,12 @@ async function getAllProductsCategories(req, res) {
         title: product.title,
         medias: product.medias,
         size: product.size,
-        quantity: product.quantity,
         price: product.price,
         reduced_price: product.reduced_price,
         description: product.description,
         likes: product.likes,
         feedbacks: product.feedbacks,
+        is_recycle: product.is_recycle
       };
       result_products.push(single_product);
     }
@@ -52,7 +52,7 @@ async function saveProduct(req, res) {
     return res.status(400).json(errors);
   }
 
-  const { medias, title, quantity, price, description, category_id, size } =
+  const { medias, title, price, description, category_id, size, is_recycle } =
     req.body;
 
   const category = await Category.findById(category_id);
@@ -63,12 +63,12 @@ async function saveProduct(req, res) {
   const newProduct = await new Product({
     owner: req.id,
     medias,
-    quantity,
     title,
     price,
     description,
     category_id,
     size,
+    is_recycle
   }).save();
 
   const product = {
@@ -78,13 +78,12 @@ async function saveProduct(req, res) {
     title: newProduct.title,
     medias: newProduct.medias,
     size: newProduct.size,
-    quantity: newProduct.quantity,
     price: newProduct.price,
     reduced_price: newProduct.reduced_price,
     description: newProduct.description,
     likes: newProduct.likes,
     feedbacks: newProduct.feedbacks,
-    sell_disable: false,
+    is_recycle: newProduct.is_recycle
   };
 
   return res.json({
@@ -112,10 +111,10 @@ async function updateProduct(req, res) {
     title,
     price,
     description,
-    quantity,
     category_id,
     size,
     reduced_price,
+    is_recycle
   } = req.body;
 
   const product = await Product.findById(product_id);
@@ -125,9 +124,9 @@ async function updateProduct(req, res) {
     product.description = description;
     product.category_id = category_id;
     product.size = size;
-    product.quantity = quantity;
     product.medias = medias;
     product.reduced_price = reduced_price;
+    product.is_recycle = is_recycle;
 
     const newone = await product.save();
 
@@ -140,13 +139,12 @@ async function updateProduct(req, res) {
       title: newone.title,
       medias: newone.medias,
       size: newone.size,
-      quantity: newone.quantity,
       price: newone.price,
       reduced_price: newone.reduced_price,
       description: newone.description,
       likes: newone.likes,
       feedbacks: newone.feedbacks,
-      sell_disable: newone.sell_disable,
+      is_recycle: newone.is_recycle,
     };
 
     if (category) {

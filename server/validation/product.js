@@ -10,7 +10,6 @@ export default function validateProductInput(data) {
   data.price = data.price > 0 ? data.price : 0;
   data.category_id = !isEmpty(data.category_id) ? data.category_id : "";
   data.size = !isEmpty(data.size) ? data.size : "";
-  data.quantity = data.quantity > 0 ? data.quantity : 0;
   data.description = !isEmpty(data.description) ? data.description : "";
 
 
@@ -24,10 +23,6 @@ export default function validateProductInput(data) {
 
   if (data.price === 0) {
     errors.price = "Price field is required";
-  }
-
-  if (data.quantity === 0) {
-    errors.quantity = "Quantity field is required";
   }
 
   if (_isEmpty(data.size)) {

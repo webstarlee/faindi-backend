@@ -16,11 +16,9 @@ export async function addCart(req, res) {
     return res.status(404).send({ message: "Product can not find" });
   }
 
-  if (Number(product.quantity) < 1) {
+  if (!product.is_recycle && product.sold) {
     return res.status(404).send({ message: "Product already sold out!" });
   }
-
-  console.log("padded");
 
   const cart = await Cart.findOne({ $and: [{ seller_id: product.owner }, { buyer_id: me._id }], });
   if (cart) {
@@ -109,7 +107,7 @@ export async function makeOrder(req, res) {
   });
   var outdated_product_ids = [];
   cart_related_products?.map((product) => {
-    if (Number(product.quantity) < 1) {
+    if (product.sold && !product.is_recycle) {
       outdated_product_ids.push(product._id);
     }
   });
@@ -171,7 +169,7 @@ export async function makeOrder(req, res) {
 
   await Product.updateMany(
     { _id: { $in: sold_product_ids } },
-    { $inc: { quantity: -1 } }
+    { sold: true }
   );
 
   await cart.deleteOne();
