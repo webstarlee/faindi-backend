@@ -392,11 +392,27 @@ async function updatePassword(req, res) {
   }
 }
 
+async function updateEmailFullname(req, res) {
+  const me = await User.findById(req.id);
+  if (!me) {
+    return res.status(401).send({ message: "Permission  denied" });
+  }
+
+  const {fullname, email} = req.body;
+
+  me.fullname = fullname;
+  me.email = email;
+  await me.save();
+
+  return res.status(200).send({success: true});
+}
+
 export {
   updateAvatar,
   updateCover,
   updateUserInfo,
   updatePassword,
   getProfileItems,
-  getProfile
+  getProfile,
+  updateEmailFullname
 };
