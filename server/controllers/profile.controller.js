@@ -1,4 +1,4 @@
-import { Category, Product, User, Follow, Cart, Order, Chat, Message } from "../models";
+import { Category, Product, User, Follow, Cart, Order, Chat, Message, Follow } from "../models";
 import validateProfileInput from "../validation/profile";
 import { hashSync, compareSync } from "bcryptjs";
 
@@ -455,6 +455,7 @@ async function deleteProfile(req, res) {
     await Cart.deleteMany({buyer_id: user._id});
     await Order.deleteMany({buyer_id: user._id});
     await Chat.deleteMany({"users.user_id": user._id});
+    await Follow.deleteMany({"$or": [{follower: user._id}, {following: user._id}]});
     await Message.deleteMany({"$or": [{receiver_id: user._id}, {sender_id: user._id}]});
 
     await user.deleteOne();
@@ -494,6 +495,7 @@ async function deleteProfile(req, res) {
   await Cart.deleteMany({buyer_id: user._id});
   await Order.deleteMany({buyer_id: user._id});
   await Chat.deleteMany({"users.user_id": user._id});
+  await Follow.deleteMany({"$or": [{follower: user._id}, {following: user._id}]});
   await Message.deleteMany({"$or": [{receiver_id: user._id}, {sender_id: user._id}]});
 
   await user.deleteOne();
