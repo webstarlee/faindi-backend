@@ -1,4 +1,4 @@
-import { Category, Product, User, Follow, Cart, Order, Chat, Message, Follow } from "../models";
+import { Category, Product, User, Follow, Cart, Order, Chat, Message } from "../models";
 import validateProfileInput from "../validation/profile";
 import { hashSync, compareSync } from "bcryptjs";
 
