@@ -22,6 +22,7 @@ async function getAllProductsCategories(req, res) {
         title: product.title,
         medias: product.medias,
         size: product.size,
+        currency: product.currency,
         price: product.price,
         reduced_price: product.reduced_price,
         description: product.description,
@@ -52,7 +53,7 @@ async function saveProduct(req, res) {
     return res.status(400).json(errors);
   }
 
-  const { medias, title, price, description, category_id, size, is_recycle } =
+  const { medias, title, price, currency, description, category_id, size, is_recycle } =
     req.body;
 
   const category = await Category.findById(category_id);
@@ -65,6 +66,7 @@ async function saveProduct(req, res) {
     medias,
     title,
     price,
+    currency,
     description,
     category_id,
     size,
@@ -79,6 +81,7 @@ async function saveProduct(req, res) {
     medias: newProduct.medias,
     size: newProduct.size,
     price: newProduct.price,
+    currency: newProduct.currency,
     reduced_price: newProduct.reduced_price,
     description: newProduct.description,
     likes: newProduct.likes,
@@ -110,6 +113,7 @@ async function updateProduct(req, res) {
     medias,
     title,
     price,
+    currency,
     description,
     category_id,
     size,
@@ -121,6 +125,7 @@ async function updateProduct(req, res) {
   if (product) {
     product.title = title;
     product.price = price;
+    product.currency = currency;
     product.description = description;
     product.category_id = category_id;
     product.size = size;
@@ -140,6 +145,7 @@ async function updateProduct(req, res) {
       medias: newone.medias,
       size: newone.size,
       price: newone.price,
+      currency: newone.currency,
       reduced_price: newone.reduced_price,
       description: newone.description,
       likes: newone.likes,

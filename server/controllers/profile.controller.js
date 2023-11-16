@@ -1,6 +1,19 @@
-import { Category, Product, User, Follow, Cart, Order, Chat, Message } from "../models";
+import {
+  Category,
+  Product,
+  User,
+  Follow,
+  Cart,
+  Order,
+  Chat,
+  Message,
+  Token,
+} from "../models";
 import validateProfileInput from "../validation/profile";
 import { hashSync, compareSync } from "bcryptjs";
+import crypto from "crypto";
+import { isWithinInterval } from "../modules/helpers";
+import { sendEmail } from "../modules/email";
 
 async function getProfileItems(req, res) {
   const me = await User.findById(req.id);
@@ -31,6 +44,7 @@ async function getProfileItems(req, res) {
       medias: product.medias,
       size: product.size,
       price: product.price,
+      currency: product.currency,
       reduced_price: product.reduced_price,
       description: product.description,
       likes: product.likes,
@@ -106,6 +120,7 @@ async function getProfileItems(req, res) {
         medias: tmp_top_product.medias,
         size: tmp_top_product.size,
         price: tmp_top_product.price,
+        currency: tmp_top_product.currency,
         reduced_price: tmp_top_product.reduced_price,
         description: tmp_top_product.description,
         likes: tmp_top_product.likes,
@@ -231,6 +246,7 @@ async function getProfile(req, res) {
       title: product.title,
       medias: product.medias,
       price: product.price,
+      currency: product.currency,
       reduced_price: product.reduced_price,
       description: product.description,
       size: product.size,
@@ -256,6 +272,7 @@ async function getProfile(req, res) {
       title: product.title,
       medias: product.medias,
       price: product.price,
+      currency: product.currency,
       reduced_price: product.reduced_price,
       description: product.description,
       size: product.size,
@@ -450,13 +467,17 @@ async function deleteProfile(req, res) {
     return res.status(401).send({ message: "Permission  denied" });
   }
 
-  const own_products = await Product.find({owner: user._id});
+  const own_products = await Product.find({ owner: user._id });
   if (own_products.length === 0) {
-    await Cart.deleteMany({buyer_id: user._id});
-    await Order.deleteMany({buyer_id: user._id});
-    await Chat.deleteMany({"users.user_id": user._id});
-    await Follow.deleteMany({"$or": [{follower: user._id}, {following: user._id}]});
-    await Message.deleteMany({"$or": [{receiver_id: user._id}, {sender_id: user._id}]});
+    await Cart.deleteMany({ buyer_id: user._id });
+    await Order.deleteMany({ buyer_id: user._id });
+    await Chat.deleteMany({ "users.user_id": user._id });
+    await Follow.deleteMany({
+      $or: [{ follower: user._id }, { following: user._id }],
+    });
+    await Message.deleteMany({
+      $or: [{ receiver_id: user._id }, { sender_id: user._id }],
+    });
 
     await user.deleteOne();
 
@@ -466,15 +487,16 @@ async function deleteProfile(req, res) {
     });
   }
 
-
-  let own_product_ids = []
+  let own_product_ids = [];
   if (own_products.length > 0) {
     own_products.map((product) => {
       own_product_ids.push(product._id);
-    })
+    });
   }
 
-  const exist_carts = await Cart.find({"products.product_id": {"$in": own_product_ids}});
+  const exist_carts = await Cart.find({
+    "products.product_id": { $in: own_product_ids },
+  });
   if (exist_carts.length > 0) {
     return res.status(404).json({
       success: false,
@@ -482,7 +504,9 @@ async function deleteProfile(req, res) {
     });
   }
 
-  const exist_orders = await Order.find({product_id: {"$in": own_product_ids}});
+  const exist_orders = await Order.find({
+    product_id: { $in: own_product_ids },
+  });
 
   if (exist_carts.length > 0) {
     return res.status(404).json({
@@ -491,12 +515,16 @@ async function deleteProfile(req, res) {
     });
   }
 
-  await Product.deleteMany({owner: user._id});
-  await Cart.deleteMany({buyer_id: user._id});
-  await Order.deleteMany({buyer_id: user._id});
-  await Chat.deleteMany({"users.user_id": user._id});
-  await Follow.deleteMany({"$or": [{follower: user._id}, {following: user._id}]});
-  await Message.deleteMany({"$or": [{receiver_id: user._id}, {sender_id: user._id}]});
+  await Product.deleteMany({ owner: user._id });
+  await Cart.deleteMany({ buyer_id: user._id });
+  await Order.deleteMany({ buyer_id: user._id });
+  await Chat.deleteMany({ "users.user_id": user._id });
+  await Follow.deleteMany({
+    $or: [{ follower: user._id }, { following: user._id }],
+  });
+  await Message.deleteMany({
+    $or: [{ receiver_id: user._id }, { sender_id: user._id }],
+  });
 
   await user.deleteOne();
 
@@ -504,6 +532,77 @@ async function deleteProfile(req, res) {
     success: true,
     message: "Your Account deleted successfullly.",
   });
+}
+
+async function sendEmailVerify(req, res) {
+  const me = await User.findById(req.id);
+  if (!me) {
+    return res.status(401).send({ message: "Permission  denied" });
+  }
+  const email = req.body.email;
+
+  await Token.findOneAndDelete({ user_id: me._id });
+  const randNum = crypto.randomInt(1000, 9999).toString();
+  const token = crypto.randomBytes(32).toString("hex");
+  await sendEmail(email, "Verification Number", randNum);
+  const newToken = new Token({
+    user_id: me._id,
+    token: token,
+    verify_number: randNum,
+  });
+
+  await newToken.save();
+
+  return res.status(200).send({
+    success: true,
+    message: "Email verification sent!",
+    token: token,
+    numner: randNum,
+  });
+}
+
+async function emailVerify(req, res) {
+  const token_hex = req.body.token;
+  const verify_num = req.body.number;
+  console.log(token_hex)
+  Token.findOne({
+    token: token_hex,
+  })
+    .exec()
+    .then(async (token) => {
+      if (!token) {
+        console.log("no token")
+        return res.status(400).send({ message: "Invalid Token" });
+      }
+
+      if (isWithinInterval(token.created_at)) {
+        if (Number(verify_num) !== Number(token.verify_number)) {
+          console.log("Verify code is invalid")
+          return res.status(400).send({
+            message: "Verify code is invalid.",
+          });
+        }
+        const user = await User.findById(token.user_id);
+        if (!user) {
+          console.log("Can not find User")
+          return res.status(400).send({
+            message: "Can not find User.",
+          });
+        }
+
+        await token.deleteOne();
+
+        return res.status(200).send({
+          success: true,
+        });
+      } else {
+        console.log(
+          "Current time is more than 15 minutes from the start time."
+        );
+        await token.deleteOne();
+        return res.status(400).send({ message: "Token expired" });
+      }
+    });
 }
 
 export {
@@ -514,5 +613,7 @@ export {
   getProfileItems,
   getProfile,
   updateEmailFullname,
-  deleteProfile
+  deleteProfile,
+  sendEmailVerify,
+  emailVerify
 };

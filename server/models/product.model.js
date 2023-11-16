@@ -33,6 +33,11 @@ const Product = model(
       type: Number,
       required: true,
     },
+    currency: {
+      type: String,
+      required: true,
+      default: "USD"
+    },
     reduced_price: {
       type: Number,
       default: 0

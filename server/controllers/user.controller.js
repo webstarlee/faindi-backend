@@ -45,6 +45,7 @@ export async function getUserProfile(req, res) {
       medias: product.medias,
       size: product.size,
       price: product.price,
+      currency: product.currency,
       reduced_price: product.reduced_price,
       description: product.description,
       likes: product.likes,

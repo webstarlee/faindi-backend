@@ -1,10 +1,11 @@
 import { verifySignUp } from "../middlewares";
+import { authJwt } from "../middlewares";
 import {
   signup,
   signin,
   verify,
   sendVerifyEmail,
-  checkUsername,
+  checkUsername
 } from "../controllers/auth.controller";
 
 export default function (app) {

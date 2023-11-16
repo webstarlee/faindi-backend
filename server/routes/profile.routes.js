@@ -6,7 +6,9 @@ import {
   updatePassword,
   updateUserInfo,
   updateEmailFullname,
-  deleteProfile
+  deleteProfile,
+  sendEmailVerify,
+  emailVerify
 } from "../controllers/profile.controller";
 import { authJwt } from "../middlewares";
 
@@ -25,6 +27,8 @@ export default function (app) {
   app.post("/api/profile/update/info", authJwt.verifyToken, updateUserInfo);
   app.post("/api/profile/update/password", authJwt.verifyToken, updatePassword);
   app.post("/api/profile/update/fullname-email", authJwt.verifyToken, updateEmailFullname);
+  app.post("/api/profile/send-email-verify", authJwt.verifyToken, sendEmailVerify);
+  app.post("/api/profile/email-verify", authJwt.verifyToken, emailVerify);
   app.get("/api/profile/mine", authJwt.verifyToken, getProfile);
   app.get("/api/profile/delete", authJwt.verifyToken, deleteProfile);
 }
